@@ -13,7 +13,8 @@ export function useBinarySetup() {
     });
 
     // Listen for binary download progress
-    ElectronAPIService.onBinaryDownloadProgress((data) => {
+    const unsubProgress = ElectronAPIService.onBinaryDownloadProgress((data) => {
+      setIsReady(false); // Reset ready state when downloads start
       setBinaryProgress(prev => ({
         ...prev,
         [data.binary]: data
@@ -21,9 +22,15 @@ export function useBinarySetup() {
     });
 
     // Listen for binaries ready
-    ElectronAPIService.onBinariesReady(() => {
+    const unsubReady = ElectronAPIService.onBinariesReady(() => {
       setIsReady(true);
+      setBinaryProgress({}); // Clear progress when ready
     });
+
+    return () => {
+      unsubProgress?.();
+      unsubReady?.();
+    };
   }, []);
 
   return {

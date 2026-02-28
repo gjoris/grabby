@@ -36,8 +36,12 @@ function App() {
     setCustomDownloadPath(''); // Reset to default after settings change
   };
 
+  const handleRedownloadBinaries = () => {
+    setCurrentView('main');
+  };
+
   if (currentView === 'settings') {
-    return <Settings onBack={handleBackFromSettings} />;
+    return <Settings onBack={handleBackFromSettings} onRedownloadBinaries={handleRedownloadBinaries} />;
   }
 
   return (
