@@ -1,5 +1,6 @@
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
+import iconPath from '../../public/icon.png';
 
 interface HeaderProps {
   onSettingsClick: () => void;
@@ -10,7 +11,7 @@ function Header({ onSettingsClick }: HeaderProps) {
     <AppBar position="static" elevation={0} sx={{ background: 'transparent' }}>
       <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          <img src="/icon.png" alt="Grabby" style={{ width: 48, height: 48 }} />
+          <img src={iconPath} alt="Grabby" style={{ width: 48, height: 48 }} />
           <Box>
             <Typography variant="h5" component="h1" sx={{ fontWeight: 600, color: 'white' }}>
               Grabby
