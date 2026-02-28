@@ -162,4 +162,89 @@ describe('ElectronAPIService', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('event listeners', () => {
+    it('registers onDownloadPlaylistInfo listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadPlaylistInfo(callback);
+      expect(window.electronAPI.onDownloadPlaylistInfo).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadItemStart listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadItemStart(callback);
+      expect(window.electronAPI.onDownloadItemStart).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadItemTitle listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadItemTitle(callback);
+      expect(window.electronAPI.onDownloadItemTitle).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadProgressUpdate listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadProgressUpdate(callback);
+      expect(window.electronAPI.onDownloadProgressUpdate).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadItemProcessing listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadItemProcessing(callback);
+      expect(window.electronAPI.onDownloadItemProcessing).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadItemComplete listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadItemComplete(callback);
+      expect(window.electronAPI.onDownloadItemComplete).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadItemError listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadItemError(callback);
+      expect(window.electronAPI.onDownloadItemError).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onDownloadComplete listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onDownloadComplete(callback);
+      expect(window.electronAPI.onDownloadComplete).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onBinaryDownloadProgress listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onBinaryDownloadProgress(callback);
+      expect(window.electronAPI.onBinaryDownloadProgress).toHaveBeenCalledWith(callback);
+    });
+
+    it('registers onBinariesReady listener', () => {
+      const callback = vi.fn();
+      ElectronAPIService.onBinariesReady(callback);
+      expect(window.electronAPI.onBinariesReady).toHaveBeenCalledWith(callback);
+    });
+  });
+
+  describe('getInfo', () => {
+    it('calls getInfo with url', async () => {
+      const mockInfo = { title: 'Video Title', duration: 3600 };
+      vi.mocked(window.electronAPI.getInfo).mockResolvedValue(mockInfo);
+      
+      const result = await ElectronAPIService.getInfo('https://example.com/video');
+      
+      expect(result).toEqual(mockInfo);
+      expect(window.electronAPI.getInfo).toHaveBeenCalledWith('https://example.com/video');
+    });
+  });
+
+  describe('getLogsDirectory', () => {
+    it('returns logs directory path', async () => {
+      vi.mocked(window.electronAPI.getLogsDirectory).mockResolvedValue('/logs/path');
+      
+      const result = await ElectronAPIService.getLogsDirectory();
+      
+      expect(result).toBe('/logs/path');
+      expect(window.electronAPI.getLogsDirectory).toHaveBeenCalled();
+    });
+  });
 });
