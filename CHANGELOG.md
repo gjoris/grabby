@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-02-28
+
+### Added
+- Comprehensive test suite for download parsing with 32 tests covering yt-dlp output parsing
+- Version parser utilities with 32 tests for extracting version info from CLI tools
+- Refactored main process with testable pure utility functions
+
+### Improved
+- Test coverage: 96.78% overall (100% for pure utilities, 91.35% for renderer)
+
 ## [1.1.2] - 2026-02-28
 
 ### Fixed
