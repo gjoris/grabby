@@ -8,15 +8,18 @@ import { createWriteStream } from 'fs';
 const DOWNLOAD_URLS = {
   darwin: {
     ytdlp: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
-    ffmpeg: 'https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip'
+    ffmpeg: 'https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip',
+    ffprobe: 'https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip'
   },
   win32: {
     ytdlp: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
-    ffmpeg: 'https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip'
+    ffmpeg: 'https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip',
+    ffprobe: 'https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip'
   },
   linux: {
     ytdlp: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
-    ffmpeg: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz'
+    ffmpeg: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz',
+    ffprobe: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz'
   }
 };
 
@@ -80,34 +83,34 @@ async function extractZip(zipPath: string, destDir: string, fileName: string): P
 }
 
 async function downloadBinary(
-  name: 'ytdlp' | 'ffmpeg', 
+  name: 'ytdlp' | 'ffmpeg' | 'ffprobe', 
   platform: 'darwin' | 'win32' | 'linux',
   onProgress?: (progress: number, status: string) => void
 ): Promise<void> {
   const url = DOWNLOAD_URLS[platform][name];
-  const binaryName = name === 'ytdlp' ? 'yt-dlp' : 'ffmpeg';
+  const binaryName = name === 'ytdlp' ? 'yt-dlp' : name;
   const dest = getBinaryPath(binaryName);
   const destDir = path.dirname(dest);
   
   fs.mkdirSync(destDir, { recursive: true });
   
-  if (name === 'ffmpeg' && platform === 'darwin') {
-    const tempZip = path.join(destDir, 'ffmpeg.zip');
+  if ((name === 'ffmpeg' || name === 'ffprobe') && platform === 'darwin') {
+    const tempZip = path.join(destDir, `${name}.zip`);
     onProgress?.(0, 'Downloading...');
     await downloadFile(url, tempZip, (progress) => {
       onProgress?.(Math.round(progress * 0.9), 'Downloading...');
     });
     onProgress?.(90, 'Extracting...');
-    await extractZip(tempZip, destDir, 'ffmpeg');
+    await extractZip(tempZip, destDir, name);
     onProgress?.(100, 'Complete');
-  } else if (name === 'ffmpeg' && platform === 'win32') {
+  } else if ((name === 'ffmpeg' || name === 'ffprobe') && platform === 'win32') {
     const tempZip = path.join(destDir, 'ffmpeg.zip');
     onProgress?.(0, 'Downloading...');
     await downloadFile(url, tempZip, (progress) => {
       onProgress?.(Math.round(progress * 0.9), 'Downloading...');
     });
     onProgress?.(90, 'Extracting...');
-    await extractZip(tempZip, destDir, 'ffmpeg.exe');
+    await extractZip(tempZip, destDir, `${name}.exe`);
     onProgress?.(100, 'Complete');
   } else {
     onProgress?.(0, 'Downloading...');
@@ -124,17 +127,20 @@ export async function checkAndDownloadBinaries(
   const platform = process.platform as 'darwin' | 'win32' | 'linux';
   const ytdlpPath = getBinaryPath('yt-dlp');
   const ffmpegPath = getBinaryPath('ffmpeg');
+  const ffprobePath = getBinaryPath('ffprobe');
   
   const ytdlpExists = binaryExists(ytdlpPath);
   const ffmpegExists = binaryExists(ffmpegPath);
+  const ffprobeExists = binaryExists(ffprobePath);
   
-  if (ytdlpExists && ffmpegExists) {
+  if (ytdlpExists && ffmpegExists && ffprobeExists) {
     return true;
   }
   
   const missing = [];
   if (!ytdlpExists) missing.push('yt-dlp');
   if (!ffmpegExists) missing.push('ffmpeg');
+  if (!ffprobeExists) missing.push('ffprobe');
   
   const response = await dialog.showMessageBox({
     type: 'warning',
@@ -159,6 +165,11 @@ export async function checkAndDownloadBinaries(
     if (!ffmpegExists) {
       await downloadBinary('ffmpeg', platform, (progress, status) => {
         onProgress?.('ffmpeg', progress, status);
+      });
+    }
+    if (!ffprobeExists) {
+      await downloadBinary('ffprobe', platform, (progress, status) => {
+        onProgress?.('ffprobe', progress, status);
       });
     }
     
