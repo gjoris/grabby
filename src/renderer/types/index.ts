@@ -14,5 +14,6 @@ export interface DownloadOptions {
   format: string;
   extractAudio?: boolean;
   audioFormat?: string;
+  mergeOutputFormat?: string;
   output: string;
 }
