@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-28
+
+### Added
+- Complete UI overhaul with modern "Glassmorphism" aesthetic and vibrant gradient backgrounds
+- High-density dashboard layout maximizing screen real estate
+- Interactive data table for downloads with columns for status, size, speed, and ETA
+- Compact "Action Bar" for URL input and format selection
+- Streaming metadata discovery: downloads now start immediately as items are found in a playlist
+- Parallel downloads: support for up to 3 concurrent video downloads
+- Enhanced per-file performance with 5 concurrent download fragments
+- Real-time download metrics: transfer speed and estimated time remaining (ETA)
+- Robust "job" tracking system allowing multiple independent download sessions simultaneously
+
+### Improved
+- Video output format: changed default container to MKV for better codec compatibility and quality
+- More responsive and professional Settings interface with two-column layout
+- Instant UI feedback when clicking the download button via placeholder items
+- Better handling of already-downloaded files with automatic title detection
+
+### Fixed
+- Fixed height alignment of URL input box in the action bar
+- Resolved issues where single video downloads would sometimes not show up in the progress list
+- Corrected FFmpeg location configuration to ensure post-processing works reliably on all platforms
+
 ## [1.1.5] - 2026-02-28
 
 ### Fixed
