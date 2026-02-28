@@ -193,6 +193,15 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
               progress: parsed.data.progress,
               size: parsed.data.size
             });
+          } else if (parsed.type === 'destination') {
+            // Update title with final filename
+            event.sender.send('download-item-title', {
+              index: currentItemIndex,
+              title: parsed.data.fileName
+            });
+            event.sender.send('download-item-processing', {
+              index: currentItemIndex
+            });
           } else if (parsed.type === 'processing') {
             event.sender.send('download-item-processing', {
               index: currentItemIndex
