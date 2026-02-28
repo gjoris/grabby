@@ -57,11 +57,18 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
       url,
       '--ffmpeg-location', ffmpegPath,
       '--progress',
-      '--newline'
+      '--newline',
+      '--yes-playlist'  // Enable playlist downloads
     ];
 
     if (options.format) {
       args.push('-f', options.format);
+    }
+    if (options.extractAudio) {
+      args.push('-x');  // Extract audio
+    }
+    if (options.audioFormat) {
+      args.push('--audio-format', options.audioFormat);
     }
     if (options.output) {
       args.push('-o', options.output);
