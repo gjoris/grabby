@@ -75,6 +75,10 @@ async function extractZip(zipPath: string, destDir: string, fileName: string): P
   for (const entry of entries) {
     if (entry.entryName.endsWith(fileName) || entry.entryName === fileName) {
       zip.extractEntryTo(entry, destDir, false, true, false, fileName);
+      
+      // Set executable permissions
+      const extractedPath = path.join(destDir, fileName);
+      fs.chmodSync(extractedPath, 0o755);
       break;
     }
   }
