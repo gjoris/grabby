@@ -3,9 +3,10 @@ import Settings from './Settings';
 import Header from './components/Header';
 import BinaryDownloadProgress from './components/BinaryDownloadProgress';
 import DownloadForm from './components/DownloadForm';
-import ProgressLog from './components/ProgressLog';
+import DownloadItemsList from './components/DownloadItemsList';
 import { useBinarySetup } from './hooks/useBinarySetup';
 import { useDownload } from './hooks/useDownload';
+import { useDownloadItems } from './hooks/useDownloadItems';
 import { useSettings } from './hooks/useSettings';
 import { DownloadType } from './types';
 
@@ -14,9 +15,11 @@ function App() {
   
   const { isReady, binaryProgress, hasBinaryDownloads } = useBinarySetup();
   const { settings, loadSettings } = useSettings();
-  const { isDownloading, progress, startDownload } = useDownload(settings.downloadPath);
+  const { isDownloading, startDownload } = useDownload(settings.downloadPath);
+  const { items, playlistName, reset } = useDownloadItems();
 
   const handleDownload = (url: string, type: DownloadType) => {
+    reset();
     startDownload(url, type);
   };
 
@@ -43,7 +46,10 @@ function App() {
             onDownload={handleDownload}
             isDownloading={isDownloading}
           />
-          <ProgressLog progress={progress} />
+          <DownloadItemsList 
+            items={items}
+            playlistName={playlistName}
+          />
         </main>
       )}
     </div>
