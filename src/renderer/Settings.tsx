@@ -4,6 +4,7 @@ import { ElectronAPIService } from './services/electronAPI';
 
 interface SettingsProps {
   onBack: () => void;
+  onRedownloadBinaries: () => void;
 }
 
 interface BinaryVersions {
@@ -13,13 +14,21 @@ interface BinaryVersions {
   lastChecked: string;
 }
 
-function Settings({ onBack }: SettingsProps) {
+interface LogStats {
+  count: number;
+  sizeBytes: number;
+  sizeMB: string;
+}
+
+function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
   const { settings, selectFolder } = useSettings();
   const [versions, setVersions] = useState<BinaryVersions | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [logStats, setLogStats] = useState<LogStats | null>(null);
 
   useEffect(() => {
     loadVersions();
+    loadLogStats();
   }, []);
 
   const loadVersions = async () => {
@@ -27,8 +36,31 @@ function Settings({ onBack }: SettingsProps) {
     setVersions(result);
   };
 
+  const loadLogStats = async () => {
+    const result = await ElectronAPIService.getLogStats();
+    setLogStats(result);
+  };
+
   const handleOpenLogs = async () => {
     await ElectronAPIService.openLogsDirectory();
+  };
+
+  const handleClearLogs = async () => {
+    const confirmed = confirm(
+      'This will delete all log files.\n\n' +
+      'This action cannot be undone.\n\n' +
+      'Continue?'
+    );
+    
+    if (confirmed) {
+      const success = await ElectronAPIService.clearLogs();
+      if (success) {
+        alert('All logs have been cleared.');
+        await loadLogStats();
+      } else {
+        alert('Failed to clear logs.');
+      }
+    }
   };
 
   const handleCheckUpdates = async () => {
@@ -57,6 +89,7 @@ function Settings({ onBack }: SettingsProps) {
     
     if (confirmed) {
       try {
+        onRedownloadBinaries();
         await ElectronAPIService.redownloadBinaries();
       } catch (error) {
         alert('Failed to redownload binaries: ' + error);
@@ -139,16 +172,111 @@ function Settings({ onBack }: SettingsProps) {
           <p className="setting-description">
             Download logs are automatically saved for troubleshooting. Logs older than 30 days are automatically deleted.
           </p>
-          <button onClick={handleOpenLogs} className="secondary-btn">
-            Open Logs Folder
-          </button>
+          {logStats && (
+            <div className="log-stats">
+              <p>
+                <strong>{logStats.count}</strong> log files • <strong>{logStats.sizeMB} MB</strong> total
+              </p>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={handleOpenLogs} className="secondary-btn">
+              Open Logs Folder
+            </button>
+            <button onClick={handleClearLogs} className="danger-btn">
+              Clear All Logs
+            </button>
+          </div>
         </div>
 
         <div className="setting-group">
           <h2>About</h2>
-          <p className="setting-description">
-            Grabby - A simple YouTube downloader powered by yt-dlp
-          </p>
+          <div className="about-content">
+            <p className="about-app">
+              <strong>Grabby v1.0.0</strong><br />
+              A cross-platform video downloader powered by yt-dlp
+            </p>
+            <p className="about-developer">
+              <strong>Developer:</strong> Geroen Joris
+            </p>
+            <p className="about-links">
+              <a 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open('https://github.com/gjoris/grabby', '_blank');
+                }}
+              >
+                GitHub Repository
+              </a>
+              {' • '}
+              <a 
+                href="#" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open('https://github.com/gjoris/grabby/issues', '_blank');
+                }}
+              >
+                Report Issue
+              </a>
+            </p>
+            <p className="about-license">
+              Licensed under MIT License
+            </p>
+            <div className="about-dependencies">
+              <p><strong>Built with:</strong></p>
+              <ul>
+                <li>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open('https://github.com/yt-dlp/yt-dlp', '_blank');
+                    }}
+                  >
+                    yt-dlp
+                  </a>
+                  {' - Video downloader'}
+                </li>
+                <li>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open('https://ffmpeg.org/', '_blank');
+                    }}
+                  >
+                    FFmpeg
+                  </a>
+                  {' - Multimedia framework'}
+                </li>
+                <li>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open('https://www.electronjs.org/', '_blank');
+                    }}
+                  >
+                    Electron
+                  </a>
+                  {' - Desktop framework'}
+                </li>
+                <li>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.open('https://react.dev/', '_blank');
+                    }}
+                  >
+                    React
+                  </a>
+                  {' - UI library'}
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
