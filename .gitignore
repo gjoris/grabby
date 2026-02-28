@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+release
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Environment
+.env
+.env.local
+
+# Binaries
+resources/bin/*/yt-dlp*
+resources/bin/*/ffmpeg*
