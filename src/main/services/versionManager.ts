@@ -49,7 +49,9 @@ export class VersionManager {
 
   static async getBinaryVersion(binaryPath: string, binaryName: string): Promise<string> {
     try {
-      const { stdout, stderr } = await execFileAsync(binaryPath, ['--version']);
+      // ffmpeg and ffprobe use -version (single dash), yt-dlp uses --version
+      const versionFlag = (binaryName === 'ffmpeg' || binaryName === 'ffprobe') ? '-version' : '--version';
+      const { stdout, stderr } = await execFileAsync(binaryPath, [versionFlag]);
       const output = stdout || stderr;
       
       if (binaryName === 'yt-dlp') {
@@ -57,7 +59,7 @@ export class VersionManager {
         const match = output.match(/(\d{4}\.\d{2}\.\d{2})/);
         return match ? match[1] : 'unknown';
       } else if (binaryName === 'ffmpeg' || binaryName === 'ffprobe') {
-        // ffmpeg outputs like "ffmpeg version N-113684-g1234abcd"
+        // ffmpeg outputs like "ffmpeg version N-113684-g1234abcd" or "ffmpeg version 6.0"
         const match = output.match(/version\s+([^\s]+)/i);
         return match ? match[1] : 'unknown';
       }
