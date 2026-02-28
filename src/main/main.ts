@@ -1,9 +1,44 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { checkAndDownloadBinaries, getBinaryPath } from './binaryManager';
 
 let mainWindow: BrowserWindow | null = null;
+
+interface Settings {
+  downloadPath: string;
+}
+
+function getSettingsPath(): string {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function loadSettings(): Settings {
+  const settingsPath = getSettingsPath();
+  try {
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+  }
+  
+  // Default settings
+  return {
+    downloadPath: app.getPath('downloads')
+  };
+}
+
+function saveSettings(settings: Settings): void {
+  const settingsPath = getSettingsPath();
+  try {
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -141,4 +176,25 @@ ipcMain.handle('check-binaries', async () => {
     ready: ytdlpExists && ffmpegExists,
     missing
   };
+});
+
+// Settings handlers
+ipcMain.handle('get-settings', async () => {
+  return loadSettings();
+});
+
+ipcMain.handle('save-settings', async (event, settings: Settings) => {
+  saveSettings(settings);
+});
+
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    properties: ['openDirectory', 'createDirectory']
+  });
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  
+  return result.filePaths[0];
 });

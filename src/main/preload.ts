@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   download: (url: string, options: any) => ipcRenderer.invoke('download', url, options),
   getInfo: (url: string) => ipcRenderer.invoke('get-info', url),
   checkBinaries: () => ipcRenderer.invoke('check-binaries'),
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (settings: any) => ipcRenderer.invoke('save-settings', settings),
   onDownloadProgress: (callback: (data: string) => void) => {
     ipcRenderer.on('download-progress', (_, data) => callback(data));
   },
