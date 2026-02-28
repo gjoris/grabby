@@ -3,6 +3,9 @@ export interface DownloadItem {
   title: string;
   status: 'pending' | 'downloading' | 'processing' | 'completed' | 'error';
   progress: number;
+  size?: string;
+  speed?: string;
+  eta?: string;
   error?: string;
 }
 
