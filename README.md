@@ -18,11 +18,10 @@ A user-friendly desktop application for downloading videos and audio from YouTub
 
 ## ✨ Features
 
-- 🎥 Download videos from YouTube and 1000+ other websites
-- 🎵 Supports audio-only downloads
+- 🎥 Download videos from YouTube
+- 🎵 Supports video or audio-only downloads
 - 📊 Real-time download progress with detailed logs
 - 🎯 Automatic quality selection (best available quality)
-- 📁 Custom download location
 - 🔄 Automatic yt-dlp and ffmpeg binary management
 - 🌐 Fully cross-platform (Windows, macOS, Linux)
 - 💾 Portable builds available
