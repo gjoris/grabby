@@ -7,17 +7,48 @@ declare global {
       getInfo: (url: string) => Promise<any>;
       onDownloadProgress: (callback: (data: string) => void) => void;
       onDownloadError: (callback: (error: string) => void) => void;
+      onBinaryDownloadProgress: (callback: (data: { binary: string; progress: number; status: string }) => void) => void;
+      onBinariesReady: (callback: () => void) => void;
+      checkBinaries: () => Promise<{ ready: boolean; missing: string[] }>;
     };
   }
 }
 
 type DownloadType = 'mp3' | 'video';
 
+interface BinaryProgress {
+  binary: string;
+  progress: number;
+  status: string;
+}
+
 function App() {
   const [url, setUrl] = useState('');
   const [progress, setProgress] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadType, setDownloadType] = useState<DownloadType>('mp3');
+  const [binaryProgress, setBinaryProgress] = useState<Record<string, BinaryProgress>>({});
+  const [isReady, setIsReady] = useState(false);
+
+  // Check binaries on mount
+  useState(() => {
+    window.electronAPI.checkBinaries().then(result => {
+      setIsReady(result.ready);
+    });
+  });
+
+  // Listen for binary download progress
+  window.electronAPI.onBinaryDownloadProgress((data) => {
+    setBinaryProgress(prev => ({
+      ...prev,
+      [data.binary]: data
+    }));
+  });
+
+  // Listen for binaries ready
+  window.electronAPI.onBinariesReady(() => {
+    setIsReady(true);
+  });
 
   const handleDownload = async () => {
     if (!url) return;
@@ -56,6 +87,8 @@ function App() {
     setProgress(`Error: ${error}`);
   });
 
+  const hasBinaryDownloads = Object.keys(binaryProgress).length > 0;
+
   return (
     <div className="app">
       <header>
@@ -63,7 +96,30 @@ function App() {
         <p>Download videos with ease</p>
       </header>
 
-      <main>
+      {hasBinaryDownloads && !isReady && (
+        <div className="binary-download">
+          <h2>Setting up dependencies...</h2>
+          <p>Downloading required components (one-time setup)</p>
+          {Object.values(binaryProgress).map((item) => (
+            <div key={item.binary} className="binary-item">
+              <div className="binary-header">
+                <span className="binary-name">{item.binary}</span>
+                <span className="binary-status">{item.status}</span>
+              </div>
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${item.progress}%` }}
+                />
+              </div>
+              <div className="progress-text">{item.progress}%</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isReady && (
+        <main>
         <div className="input-group">
           <input
             type="text"
@@ -111,6 +167,7 @@ function App() {
           </div>
         )}
       </main>
+      )}
     </div>
   );
 }
