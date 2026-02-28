@@ -31,7 +31,7 @@ interface Settings {
 
 function App() {
   const [url, setUrl] = useState('');
-  const [progress, setProgress] = useState('');
+  const [progress, setProgress] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadType, setDownloadType] = useState<DownloadType>('mp3');
   const [binaryProgress, setBinaryProgress] = useState<Record<string, BinaryProgress>>({});
@@ -66,7 +66,7 @@ function App() {
     if (!url) return;
     
     setIsDownloading(true);
-    setProgress('Starting download...');
+    setProgress(['Starting download...']);
 
     try {
       const options = downloadType === 'mp3' 
@@ -82,9 +82,9 @@ function App() {
           };
 
       await window.electronAPI.download(url, options);
-      setProgress('Download complete!');
+      setProgress(prev => [...prev, 'Download complete!']);
     } catch (error) {
-      setProgress(`Error: ${error}`);
+      setProgress(prev => [...prev, `Error: ${error}`]);
     } finally {
       setIsDownloading(false);
     }
@@ -100,11 +100,11 @@ function App() {
 
   // Listen for progress updates
   window.electronAPI.onDownloadProgress((data) => {
-    setProgress(data);
+    setProgress(prev => [...prev, data]);
   });
 
   window.electronAPI.onDownloadError((error) => {
-    setProgress(`Error: ${error}`);
+    setProgress(prev => [...prev, `Error: ${error}`]);
   });
 
   const hasBinaryDownloads = Object.keys(binaryProgress).length > 0;
@@ -210,9 +210,9 @@ function App() {
           {isDownloading ? 'Downloading...' : 'Download'}
         </button>
 
-        {progress && (
+        {progress.length > 0 && (
           <div className="progress">
-            <pre>{progress}</pre>
+            <pre>{progress.join('\n')}</pre>
           </div>
         )}
       </main>

@@ -122,6 +122,8 @@ input[type="text"]:focus {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   max-height: 400px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
 }
 
 .progress pre {
@@ -130,6 +132,7 @@ input[type="text"]:focus {
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
+  color: #333;
 }
 
 .binary-download {
