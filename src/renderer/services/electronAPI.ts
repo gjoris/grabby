@@ -5,8 +5,14 @@ declare global {
     electronAPI: {
       download: (url: string, options: DownloadOptions) => Promise<any>;
       getInfo: (url: string) => Promise<any>;
-      onDownloadProgress: (callback: (data: string) => void) => void;
-      onDownloadError: (callback: (error: string) => void) => void;
+      onDownloadPlaylistInfo: (callback: (data: any) => void) => void;
+      onDownloadItemStart: (callback: (data: any) => void) => void;
+      onDownloadItemTitle: (callback: (data: any) => void) => void;
+      onDownloadProgressUpdate: (callback: (data: any) => void) => void;
+      onDownloadItemProcessing: (callback: (data: any) => void) => void;
+      onDownloadItemComplete: (callback: (data: any) => void) => void;
+      onDownloadItemError: (callback: (data: any) => void) => void;
+      onDownloadComplete: (callback: () => void) => void;
       onBinaryDownloadProgress: (callback: (data: { binary: string; progress: number; status: string }) => void) => void;
       onBinariesReady: (callback: () => void) => void;
       checkBinaries: () => Promise<{ ready: boolean; missing: string[] }>;
@@ -44,12 +50,36 @@ export class ElectronAPIService {
     return window.electronAPI.saveSettings(settings);
   }
 
-  static onDownloadProgress(callback: (data: string) => void): void {
-    window.electronAPI.onDownloadProgress(callback);
+  static onDownloadPlaylistInfo(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadPlaylistInfo(callback);
   }
 
-  static onDownloadError(callback: (error: string) => void): void {
-    window.electronAPI.onDownloadError(callback);
+  static onDownloadItemStart(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadItemStart(callback);
+  }
+
+  static onDownloadItemTitle(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadItemTitle(callback);
+  }
+
+  static onDownloadProgressUpdate(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadProgressUpdate(callback);
+  }
+
+  static onDownloadItemProcessing(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadItemProcessing(callback);
+  }
+
+  static onDownloadItemComplete(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadItemComplete(callback);
+  }
+
+  static onDownloadItemError(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadItemError(callback);
+  }
+
+  static onDownloadComplete(callback: () => void): void {
+    window.electronAPI.onDownloadComplete(callback);
   }
 
   static onBinaryDownloadProgress(callback: (data: { binary: string; progress: number; status: string }) => void): void {
