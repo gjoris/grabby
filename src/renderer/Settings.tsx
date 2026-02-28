@@ -1,29 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useSettings } from './hooks/useSettings';
 
 interface SettingsProps {
   onBack: () => void;
 }
 
-interface Settings {
-  downloadPath: string;
-}
-
 function Settings({ onBack }: SettingsProps) {
-  const [settings, setSettings] = useState<Settings>({ downloadPath: '' });
-
-  useEffect(() => {
-    window.electronAPI.getSettings().then(result => {
-      setSettings(result);
-    });
-  }, []);
-
-  const handleSelectFolder = async () => {
-    const result = await window.electronAPI.selectFolder();
-    if (result) {
-      setSettings({ downloadPath: result });
-      await window.electronAPI.saveSettings({ downloadPath: result });
-    }
-  };
+  const { settings, selectFolder } = useSettings();
 
   return (
     <div className="settings-view">
@@ -46,7 +28,7 @@ function Settings({ onBack }: SettingsProps) {
               value={settings.downloadPath || 'Not set'} 
               readOnly 
             />
-            <button onClick={handleSelectFolder}>Browse</button>
+            <button onClick={selectFolder}>Browse</button>
           </div>
         </div>
 
