@@ -1,68 +1,158 @@
-# Grabby
+<div align="center">
 
-Cross-platform GUI for yt-dlp
+# 🎬 Grabby
 
-## Development
+### A modern, cross-platform GUI for yt-dlp
+
+[![Build Status](https://github.com/gjoris/grabby/workflows/Build%20and%20Release/badge.svg)](https://github.com/gjoris/grabby/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](https://github.com/gjoris/grabby/releases)
+
+A user-friendly desktop application for downloading videos and audio from YouTube and thousands of other websites, built with Electron and React.
+
+[Download](https://github.com/gjoris/grabby/releases) • [Features](#-features) • [Installation](#-installation) • [Development](#-development)
+
+</div>
+
+---
+
+## ✨ Features
+
+- 🎥 Download videos from YouTube and 1000+ other websites
+- 🎵 Supports audio-only downloads
+- 📊 Real-time download progress with detailed logs
+- 🎯 Automatic quality selection (best available quality)
+- 📁 Custom download location
+- 🔄 Automatic yt-dlp and ffmpeg binary management
+- 🌐 Fully cross-platform (Windows, macOS, Linux)
+- 💾 Portable builds available
+- 🎨 Modern and intuitive user interface
+- 📝 Detailed download history
+
+## 📥 Installation
+
+### Download Releases
+
+Download the latest version for your platform:
+
+- **Windows**: `Grabby-Setup-x.x.x.exe` (installer) or `Grabby-x.x.x.exe` (portable)
+- **macOS**: `Grabby-x.x.x.dmg` or `Grabby-x.x.x-mac.zip`
+- **Linux**: `Grabby-x.x.x.AppImage` or `Grabby-x.x.x.tar.gz`
+
+👉 [Download the latest release](https://github.com/gjoris/grabby/releases/latest)
+
+### Installation Instructions
+
+#### Windows
+1. Download the installer or portable version
+2. Run the file
+3. Follow the installation wizard (installer version only)
+
+#### macOS
+1. Download the `.dmg` file
+2. Open the file and drag Grabby to your Applications folder
+3. On first launch: right-click → Open (due to Gatekeeper)
+
+#### Linux
+1. Download the `.AppImage` file
+2. Make it executable: `chmod +x Grabby-x.x.x.AppImage`
+3. Run: `./Grabby-x.x.x.AppImage`
+
+## 🚀 Usage
+
+1. Launch Grabby
+2. Paste a video URL in the input field
+3. Choose your download location (optional)
+4. Click "Download"
+5. Follow the progress in real-time
+
+The application automatically downloads the required binaries (yt-dlp and ffmpeg) on first use.
+
+## 🛠️ Development
+
+### Requirements
+
+- Node.js 20 or higher
+- npm or yarn
+
+### Setup
 
 ```bash
+# Clone the repository
+git clone https://github.com/gjoris/grabby.git
+cd grabby
+
 # Install dependencies
 npm install
 
-# Run in development mode
+# Start in development mode
 npm run dev
-
-# In another terminal, start Electron
-NODE_ENV=development npm start
 ```
 
-## Building
+### Project Structure
+
+```
+grabby/
+├── src/
+│   ├── main/              # Electron main process
+│   │   ├── services/      # Backend services
+│   │   └── binaryManager.ts
+│   └── renderer/          # React frontend
+│       ├── components/    # UI components
+│       ├── hooks/         # Custom React hooks
+│       └── services/      # Frontend services
+├── resources/             # Application resources
+│   └── bin/              # Platform binaries
+└── dist/                 # Build output
+```
+
+### Build Commands
 
 ```bash
-# Build for current platform
+# Build for development
+npm run build
+
+# Package for current platform
 npm run package
 
-# Output will be in the `release` folder
+# Output in release/ folder
 ```
 
-## Bundling Binaries
+## 🤝 Contributing
 
-Before building, you need to download the platform-specific binaries:
+Contributions are welcome! Feel free to:
 
-### macOS (darwin)
-```bash
-# yt-dlp
-curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/bin/darwin/yt-dlp
-chmod +x resources/bin/darwin/yt-dlp
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-# ffmpeg (download from https://evermeet.cx/ffmpeg/ or use homebrew)
-# Place ffmpeg binary in resources/bin/darwin/
-```
+## 📋 Tech Stack
 
-### Windows (win32)
-```bash
-# Download yt-dlp.exe from https://github.com/yt-dlp/yt-dlp/releases
-# Download ffmpeg.exe from https://www.gyan.dev/ffmpeg/builds/
-# Place both in resources/bin/win32/
-```
+- **Frontend**: React 19, TypeScript
+- **Backend**: Electron 40, Node.js
+- **Build**: Vite, electron-builder
+- **Dependencies**: yt-dlp, ffmpeg
 
-### Linux
-```bash
-# yt-dlp
-curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/bin/linux/yt-dlp
-chmod +x resources/bin/linux/yt-dlp
+## 📝 License
 
-# ffmpeg (download static build from https://johnvansickle.com/ffmpeg/)
-# Place ffmpeg binary in resources/bin/linux/
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Features
+## 🙏 Credits
 
-- Download videos from YouTube and other supported sites
-- Automatic format selection (best quality)
-- Progress tracking
-- Cross-platform (macOS, Windows, Linux)
-- Portable builds available
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - The powerful video downloader
+- [ffmpeg](https://ffmpeg.org/) - Multimedia framework
+- [Electron](https://www.electronjs.org/) - Cross-platform desktop apps
 
-## License
+## 📧 Contact
 
-MIT
+Have questions or suggestions? Open an [issue](https://github.com/gjoris/grabby/issues) on GitHub!
+
+---
+
+<div align="center">
+
+Made with ❤️ for the community
+
+</div>
