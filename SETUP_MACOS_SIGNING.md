@@ -21,7 +21,7 @@ You need:
 
 ## Step 1: Create a Self-Signed Certificate
 
-### Option A: Using OpenSSL (Command line)
+### Option A: Using OpenSSL (Command line) - RECOMMENDED
 
 Run these commands on your Mac:
 
@@ -33,20 +33,24 @@ openssl genrsa -out ~/Desktop/macos.key 2048
 openssl req -new -x509 -key ~/Desktop/macos.key -out ~/Desktop/macos.crt -days 3650 \
   -subj "/CN=Developer ID Application: Geroen Joris"
 
-# Convert to PKCS12 format (.p12) with a password
+# Convert to PKCS12 format (.p12) - will prompt for password
 openssl pkcs12 -export -in ~/Desktop/macos.crt -inkey ~/Desktop/macos.key \
-  -out ~/Desktop/macos.p12 -name "Developer ID Application: Geroen Joris" \
-  -passout pass:YourPassword
+  -out ~/Desktop/macos.p12 -name "Developer ID Application: Geroen Joris"
 
-# Import into keychain
+# Import into keychain - will prompt for the password you just set
 security import ~/Desktop/macos.p12 -k ~/Library/Keychains/login.keychain \
-  -P YourPassword -T /usr/bin/codesign -T /usr/bin/security
+  -T /usr/bin/codesign -T /usr/bin/security
 
 # Clean up temporary files
 rm ~/Desktop/macos.key ~/Desktop/macos.crt
 ```
 
-When prompted for the export password, use a strong password (you'll need it in Step 3).
+When prompted:
+1. **"Enter export password:"** - Enter any strong password (e.g., `MySecurePassword123`)
+2. **"Verify:"** - Confirm the same password
+3. **"Enter password to add item to keychain:"** - This is your Mac password, press Enter or type it
+
+**Important:** Remember the password you entered in step 1 - you'll need it in Step 3.
 
 ### Option B: Using Keychain Access GUI (Easier)
 
