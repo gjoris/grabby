@@ -90,14 +90,15 @@ app.on('activate', () => {
 ipcMain.handle('download', async (event, url: string, options: any) => {
   return new Promise((resolve, reject) => {
     const ytdlpPath = getBinaryPath('yt-dlp');
-    const ffmpegPath = getBinaryPath('ffmpeg');
+    const ffmpegPath = path.dirname(getBinaryPath('ffmpeg'));
     
     const args = [
       url,
       '--ffmpeg-location', ffmpegPath,
       '--progress',
       '--newline',
-      '--yes-playlist'  // Enable playlist downloads
+      '--yes-playlist',  // Enable playlist downloads
+      '--no-warnings'    // Suppress warnings to reduce noise
     ];
 
     if (options.format) {
@@ -115,12 +116,25 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
 
     const ytdlp = spawn(ytdlpPath, args);
     
+    let lastLine = '';
+    
     ytdlp.stdout.on('data', (data) => {
-      event.sender.send('download-progress', data.toString());
+      const lines = data.toString().split('\n').filter((line: string) => line.trim());
+      lines.forEach((line: string) => {
+        // Only send if different from last line to avoid duplicates
+        if (line !== lastLine) {
+          event.sender.send('download-progress', line);
+          lastLine = line;
+        }
+      });
     });
 
     ytdlp.stderr.on('data', (data) => {
-      event.sender.send('download-error', data.toString());
+      const text = data.toString();
+      // Only send actual errors, not warnings
+      if (text.includes('ERROR:')) {
+        event.sender.send('download-error', text);
+      }
     });
 
     ytdlp.on('close', (code) => {
@@ -164,16 +178,19 @@ ipcMain.handle('get-info', async (event, url: string) => {
 ipcMain.handle('check-binaries', async () => {
   const ytdlpPath = getBinaryPath('yt-dlp');
   const ffmpegPath = getBinaryPath('ffmpeg');
+  const ffprobePath = getBinaryPath('ffprobe');
   
   const ytdlpExists = require('fs').existsSync(ytdlpPath);
   const ffmpegExists = require('fs').existsSync(ffmpegPath);
+  const ffprobeExists = require('fs').existsSync(ffprobePath);
   
   const missing = [];
   if (!ytdlpExists) missing.push('yt-dlp');
   if (!ffmpegExists) missing.push('ffmpeg');
+  if (!ffprobeExists) missing.push('ffprobe');
   
   return {
-    ready: ytdlpExists && ffmpegExists,
+    ready: ytdlpExists && ffmpegExists && ffprobeExists,
     missing
   };
 });
