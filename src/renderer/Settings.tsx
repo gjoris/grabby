@@ -114,7 +114,7 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton edge="start" color="inherit" onClick={onBack}>
+          <IconButton edge="start" color="inherit" onClick={onBack} aria-label="Back">
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" sx={{ ml: 2 }}>

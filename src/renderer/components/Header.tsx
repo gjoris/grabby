@@ -24,6 +24,7 @@ function Header({ onSettingsClick }: HeaderProps) {
           onClick={onSettingsClick}
           sx={{ color: 'white' }}
           size="large"
+          aria-label="Settings"
         >
           <SettingsIcon />
         </IconButton>
