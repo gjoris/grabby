@@ -47,7 +47,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
   };
 
   return (
-    <Paper elevation={3} sx={{ overflow: 'hidden' }}>
+    <Paper elevation={3} sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {playlistName && (
         <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
           <PlaylistPlayIcon />
@@ -58,7 +58,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
         </Box>
       )}
       
-      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+      <List sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
         {items.map((item) => (
           <ListItem 
             key={item.id}

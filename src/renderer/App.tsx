@@ -84,28 +84,43 @@ function App() {
         )}
 
         {isReady && (
-          <Box sx={{ 
-            flex: 1, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 2,
-            maxWidth: 900,
-            width: '100%',
-            mx: 'auto',
-            px: 3,
-            pb: 3,
-            overflow: 'auto',
-          }}>
-            <DownloadForm 
-              onDownload={handleDownload}
-              isDownloading={isDownloading}
-            />
-            <DownloadLocationSelector onLocationChange={handleLocationChange} />
-            <DownloadItemsList 
-              items={items}
-              playlistName={playlistName}
-            />
-          </Box>
+          <>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: 2,
+              maxWidth: 900,
+              width: '100%',
+              mx: 'auto',
+              px: 3,
+              pt: 3,
+              flexShrink: 0,
+            }}>
+              <DownloadForm 
+                onDownload={handleDownload}
+                isDownloading={isDownloading}
+              />
+              <DownloadLocationSelector onLocationChange={handleLocationChange} />
+            </Box>
+            
+            <Box sx={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              maxWidth: 900,
+              width: '100%',
+              mx: 'auto',
+              px: 3,
+              pb: 3,
+              overflow: 'hidden',
+              minHeight: 0,
+            }}>
+              <DownloadItemsList 
+                items={items}
+                playlistName={playlistName}
+              />
+            </Box>
+          </>
         )}
       </Box>
     </ThemeProvider>
