@@ -72,10 +72,19 @@ jobs:
       - name: Build application
         run: npm run build
       
+      - name: Import macOS signing certificate (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Decode and import the certificate
+          echo "${{ secrets.MACOS_CERTIFICATE }}" | base64 --decode > macos.p12
+          mkdir -p certs
+          mv macos.p12 certs/
+      
       - name: Package application
         run: npm run package
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
       
       - name: Upload artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
