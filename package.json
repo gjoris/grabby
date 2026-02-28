@@ -1,0 +1,80 @@
+{
+  "name": "grabby",
+  "version": "1.0.0",
+  "description": "Cross-platform yt-dlp GUI application",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "dev": "npm run build:main && concurrently \"vite\" \"wait-on http://localhost:5173 && npm run start:electron\"",
+    "start:electron": "NODE_ENV=development electron .",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build": "npm run build:renderer && npm run build:main",
+    "start": "electron .",
+    "package": "npm run build && electron-builder"
+  },
+  "keywords": [
+    "yt-dlp",
+    "downloader",
+    "video"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.6",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.1",
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "wait-on": "^9.0.4"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "build": {
+    "appId": "com.grabby.app",
+    "productName": "Grabby",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Utility"
+    }
+  }
+}
