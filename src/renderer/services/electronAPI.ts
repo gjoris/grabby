@@ -3,7 +3,7 @@ import { Settings, DownloadOptions } from '../types';
 declare global {
   interface Window {
     electronAPI: {
-      download: (url: string, options: DownloadOptions) => Promise<any>;
+      download: (url: string, options: DownloadOptions, jobId: string) => Promise<any>;
       getInfo: (url: string) => Promise<any>;
       onDownloadPlaylistInfo: (callback: (data: any) => void) => void;
       onDownloadItemStart: (callback: (data: any) => void) => void;
@@ -32,8 +32,8 @@ declare global {
 }
 
 export class ElectronAPIService {
-  static async download(url: string, options: DownloadOptions): Promise<any> {
-    return window.electronAPI.download(url, options);
+  static async download(url: string, options: DownloadOptions, jobId: string): Promise<any> {
+    return window.electronAPI.download(url, options, jobId);
   }
 
   static async getInfo(url: string): Promise<any> {
