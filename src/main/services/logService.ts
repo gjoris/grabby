@@ -5,6 +5,7 @@ import * as path from 'path';
 export class LogService {
   private static logDir: string;
   private static currentLogFile: string | null = null;
+  private static appLogFile: string | null = null;
 
   static initialize(): void {
     this.logDir = path.join(app.getPath('userData'), 'logs');
@@ -14,8 +15,68 @@ export class LogService {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
 
+    // Initialize application log
+    this.initializeAppLog();
+
     // Clean up old logs (keep last 30 days)
     this.cleanOldLogs();
+  }
+
+  private static initializeAppLog(): void {
+    const date = new Date().toISOString().split('T')[0];
+    const logFileName = `app-${date}.log`;
+    this.appLogFile = path.join(this.logDir, logFileName);
+    
+    // Only write header if file doesn't exist
+    if (!fs.existsSync(this.appLogFile)) {
+      const header = this.formatLogLine('INFO', '='.repeat(80));
+      const startLine = this.formatLogLine('INFO', `Application started - Grabby v1.0.0`);
+      const separator = this.formatLogLine('INFO', '='.repeat(80));
+      
+      fs.writeFileSync(this.appLogFile, `${header}${startLine}${separator}`);
+    } else {
+      // Append session start to existing log
+      const sessionStart = this.formatLogLine('INFO', `New session started`);
+      fs.appendFileSync(this.appLogFile, sessionStart);
+    }
+
+    // Redirect console.log and console.error to app log
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = (...args: any[]) => {
+      originalLog(...args);
+      this.appLog(args.join(' '), 'info');
+    };
+
+    console.error = (...args: any[]) => {
+      originalError(...args);
+      this.appLog(args.join(' '), 'error');
+    };
+
+    // Log uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      this.appLog(`Uncaught Exception: ${error.message}\n${error.stack}`, 'error');
+    });
+
+    process.on('unhandledRejection', (reason) => {
+      this.appLog(`Unhandled Rejection: ${reason}`, 'error');
+    });
+  }
+
+  static appLog(message: string, type: 'info' | 'error' | 'warn' = 'info'): void {
+    if (!this.appLogFile) {
+      this.initializeAppLog();
+    }
+
+    const formattedLine = this.formatLogLine(type.toUpperCase(), message);
+    
+    try {
+      fs.appendFileSync(this.appLogFile!, formattedLine);
+    } catch (error) {
+      // Fallback to console if file write fails
+      console.error('Failed to write to app log file:', error);
+    }
   }
 
   static startDownloadLog(): string {
@@ -28,6 +89,9 @@ export class LogService {
     const separator = this.formatLogLine('INFO', '='.repeat(80));
     
     fs.writeFileSync(this.currentLogFile, `${header}${startLine}${separator}`);
+    
+    // Also log to app log
+    this.appLog(`Download session started: ${logFileName}`, 'info');
     
     return this.currentLogFile;
   }
@@ -60,6 +124,9 @@ export class LogService {
     
     fs.appendFileSync(this.currentLogFile, `${separator}${endLine}${footer}\n`);
     
+    // Also log to app log
+    this.appLog(`Download session ${success ? 'completed' : 'failed'}`, success ? 'info' : 'error');
+    
     this.currentLogFile = null;
   }
 
@@ -85,6 +152,7 @@ export class LogService {
         
         if (stats.mtimeMs < thirtyDaysAgo) {
           fs.unlinkSync(filePath);
+          this.appLog(`Deleted old log file: ${file}`, 'info');
         }
       });
     } catch (error) {
@@ -109,6 +177,52 @@ export class LogService {
     } catch (error) {
       console.error('Failed to get recent logs:', error);
       return [];
+    }
+  }
+
+  static getLogStats(): { count: number; sizeBytes: number; sizeMB: string } {
+    try {
+      const files = fs.readdirSync(this.logDir);
+      let totalSize = 0;
+      let count = 0;
+
+      files.forEach(file => {
+        const filePath = path.join(this.logDir, file);
+        const stats = fs.statSync(filePath);
+        totalSize += stats.size;
+        count++;
+      });
+
+      return {
+        count,
+        sizeBytes: totalSize,
+        sizeMB: (totalSize / (1024 * 1024)).toFixed(2)
+      };
+    } catch (error) {
+      console.error('Failed to get log stats:', error);
+      return { count: 0, sizeBytes: 0, sizeMB: '0.00' };
+    }
+  }
+
+  static clearAllLogs(): boolean {
+    try {
+      const files = fs.readdirSync(this.logDir);
+      
+      files.forEach(file => {
+        const filePath = path.join(this.logDir, file);
+        fs.unlinkSync(filePath);
+      });
+
+      this.appLog('All logs cleared by user', 'info');
+      
+      // Reinitialize app log after clearing
+      this.appLogFile = null;
+      this.initializeAppLog();
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to clear logs:', error);
+      return false;
     }
   }
 }
