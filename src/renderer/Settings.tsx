@@ -1,4 +1,5 @@
 import { useSettings } from './hooks/useSettings';
+import { ElectronAPIService } from './services/electronAPI';
 
 interface SettingsProps {
   onBack: () => void;
@@ -6,6 +7,10 @@ interface SettingsProps {
 
 function Settings({ onBack }: SettingsProps) {
   const { settings, selectFolder } = useSettings();
+
+  const handleOpenLogs = async () => {
+    await ElectronAPIService.openLogsDirectory();
+  };
 
   return (
     <div className="settings-view">
@@ -30,6 +35,16 @@ function Settings({ onBack }: SettingsProps) {
             />
             <button onClick={selectFolder}>Browse</button>
           </div>
+        </div>
+
+        <div className="setting-group">
+          <h2>Logs</h2>
+          <p className="setting-description">
+            Download logs are automatically saved for troubleshooting. Logs older than 30 days are automatically deleted.
+          </p>
+          <button onClick={handleOpenLogs} className="secondary-btn">
+            Open Logs Folder
+          </button>
         </div>
 
         <div className="setting-group">

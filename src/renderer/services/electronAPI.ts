@@ -13,6 +13,8 @@ declare global {
       selectFolder: () => Promise<string | null>;
       getSettings: () => Promise<Settings>;
       saveSettings: (settings: Settings) => Promise<void>;
+      getLogsDirectory: () => Promise<string>;
+      openLogsDirectory: () => Promise<void>;
     };
   }
 }
@@ -56,5 +58,13 @@ export class ElectronAPIService {
 
   static onBinariesReady(callback: () => void): void {
     window.electronAPI.onBinariesReady(callback);
+  }
+
+  static async getLogsDirectory(): Promise<string> {
+    return window.electronAPI.getLogsDirectory();
+  }
+
+  static async openLogsDirectory(): Promise<void> {
+    return window.electronAPI.openLogsDirectory();
   }
 }
