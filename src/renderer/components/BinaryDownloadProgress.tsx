@@ -1,3 +1,5 @@
+import { Paper, Box, Typography, LinearProgress, Chip } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import { BinaryProgress } from '../types';
 
 interface BinaryDownloadProgressProps {
@@ -6,25 +8,46 @@ interface BinaryDownloadProgressProps {
 
 function BinaryDownloadProgress({ binaryProgress }: BinaryDownloadProgressProps) {
   return (
-    <div className="binary-download">
-      <h2>Setting up dependencies...</h2>
-      <p>Downloading required components (one-time setup)</p>
-      {Object.values(binaryProgress).map((item) => (
-        <div key={item.binary} className="binary-item">
-          <div className="binary-header">
-            <span className="binary-name">{item.binary}</span>
-            <span className="binary-status">{item.status}</span>
-          </div>
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${item.progress}%` }}
-            />
-          </div>
-          <div className="progress-text">{item.progress}%</div>
-        </div>
-      ))}
-    </div>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      flex: 1,
+      px: 3
+    }}>
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 500, width: '100%' }}>
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <DownloadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+          <Typography variant="h5" gutterBottom>
+            Setting up dependencies...
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Downloading required components (one-time setup)
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {Object.values(binaryProgress).map((item) => (
+            <Box key={item.binary}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  {item.binary}
+                </Typography>
+                <Chip label={item.status} size="small" color="primary" variant="outlined" />
+              </Box>
+              <LinearProgress 
+                variant="determinate" 
+                value={item.progress} 
+                sx={{ height: 8, borderRadius: 4 }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                {item.progress}%
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Paper>
+    </Box>
   );
 }
 

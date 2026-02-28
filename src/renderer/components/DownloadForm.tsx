@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Paper, TextField, RadioGroup, FormControlLabel, Radio, Button, Box } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import { DownloadType } from '../types';
 
 interface DownloadFormProps {
@@ -15,48 +17,49 @@ function DownloadForm({ onDownload, isDownloading }: DownloadFormProps) {
   };
 
   return (
-    <>
-      <div className="input-group">
-        <input
-          type="text"
+    <Paper elevation={3} sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <TextField
+          fullWidth
           placeholder="Paste YouTube URL or playlist here..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           disabled={isDownloading}
+          variant="outlined"
+          size="medium"
         />
-      </div>
 
-      <div className="format-selector">
-        <label>
-          <input
-            type="radio"
-            value="mp3"
-            checked={downloadType === 'mp3'}
-            onChange={(e) => setDownloadType(e.target.value as DownloadType)}
+        <RadioGroup
+          row
+          value={downloadType}
+          onChange={(e) => setDownloadType(e.target.value as DownloadType)}
+        >
+          <FormControlLabel 
+            value="mp3" 
+            control={<Radio />} 
+            label="MP3 (audio only)" 
             disabled={isDownloading}
           />
-          MP3 (audio only)
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="video"
-            checked={downloadType === 'video'}
-            onChange={(e) => setDownloadType(e.target.value as DownloadType)}
+          <FormControlLabel 
+            value="video" 
+            control={<Radio />} 
+            label="Video (best quality)" 
             disabled={isDownloading}
           />
-          Video (best quality)
-        </label>
-      </div>
+        </RadioGroup>
 
-      <button 
-        onClick={handleSubmit}
-        disabled={isDownloading || !url}
-        className="download-btn"
-      >
-        {isDownloading ? 'Downloading...' : 'Download'}
-      </button>
-    </>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleSubmit}
+          disabled={isDownloading || !url}
+          startIcon={<DownloadIcon />}
+          fullWidth
+        >
+          {isDownloading ? 'Downloading...' : 'Download'}
+        </Button>
+      </Box>
+    </Paper>
   );
 }
 

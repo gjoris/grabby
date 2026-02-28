@@ -1,4 +1,14 @@
 import { useState, useEffect } from 'react';
+import { 
+  Box, Container, AppBar, Toolbar, IconButton, Typography, Paper, 
+  TextField, Button, Divider, List, ListItem, ListItemText, Link,
+  Alert
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import FolderIcon from '@mui/icons-material/Folder';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { useSettings } from './hooks/useSettings';
 import { ElectronAPIService } from './services/electronAPI';
 
@@ -47,9 +57,7 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
 
   const handleClearLogs = async () => {
     const confirmed = confirm(
-      'This will delete all log files.\n\n' +
-      'This action cannot be undone.\n\n' +
-      'Continue?'
+      'This will delete all log files.\n\nThis action cannot be undone.\n\nContinue?'
     );
     
     if (confirmed) {
@@ -82,9 +90,7 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
 
   const handleRedownloadBinaries = async () => {
     const confirmed = confirm(
-      'This will delete and re-download all binaries (yt-dlp, ffmpeg, ffprobe).\n\n' +
-      'The application will restart after the download.\n\n' +
-      'Continue?'
+      'This will delete and re-download all binaries (yt-dlp, ffmpeg, ffprobe).\n\nThe application will restart after the download.\n\nContinue?'
     );
     
     if (confirmed) {
@@ -98,188 +104,203 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
   };
 
   return (
-    <div className="settings-view">
-      <div className="settings-header">
-        <button className="back-btn" onClick={onBack}>
-          ← Back
-        </button>
-        <h1>Settings</h1>
-      </div>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton edge="start" color="inherit" onClick={onBack}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ ml: 2 }}>
+            Settings
+          </Typography>
+        </Toolbar>
+      </AppBar>
 
-      <div className="settings-content">
-        <div className="setting-group">
-          <h2>Download Location</h2>
-          <p className="setting-description">
-            Set the default location where your downloaded files will be saved. You can change this per download in the main screen.
-          </p>
-          <div className="folder-selector">
-            <input 
-              type="text" 
-              value={settings.downloadPath || 'Not set'} 
-              readOnly 
-            />
-            <button onClick={selectFolder}>Browse</button>
-          </div>
-        </div>
+      <Container maxWidth="md" sx={{ py: 4, flex: 1, overflow: 'auto' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          
+          {/* Download Location */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Download Location
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Set the default location where your downloaded files will be saved.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                fullWidth
+                value={settings.downloadPath || 'Not set'}
+                InputProps={{ readOnly: true }}
+                size="small"
+              />
+              <Button variant="outlined" startIcon={<FolderIcon />} onClick={selectFolder}>
+                Browse
+              </Button>
+            </Box>
+          </Paper>
 
-        <div className="setting-group">
-          <h2>Binary Versions</h2>
-          <p className="setting-description">
-            Installed versions of yt-dlp and ffmpeg tools
-          </p>
-          {versions ? (
-            <div className="versions-list">
-              <div className="version-item">
-                <span className="version-label">yt-dlp:</span>
-                <span className="version-value">{versions.ytdlp}</span>
-              </div>
-              <div className="version-item">
-                <span className="version-label">ffmpeg:</span>
-                <span className="version-value">{versions.ffmpeg}</span>
-              </div>
-              <div className="version-item">
-                <span className="version-label">ffprobe:</span>
-                <span className="version-value">{versions.ffprobe}</span>
-              </div>
-              <div className="version-item">
-                <span className="version-label">Last checked:</span>
-                <span className="version-value">
-                  {new Date(versions.lastChecked).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <p>Loading versions...</p>
-          )}
-          <button 
-            onClick={handleCheckUpdates} 
-            className="secondary-btn"
-            disabled={checkingUpdates}
-            style={{ marginRight: '0.5rem' }}
-          >
-            {checkingUpdates ? 'Checking...' : 'Check for Updates'}
-          </button>
-          <button 
-            onClick={handleRedownloadBinaries} 
-            className="danger-btn"
-          >
-            Redownload Binaries
-          </button>
-        </div>
+          {/* Binary Versions */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Binary Versions
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Installed versions of yt-dlp and ffmpeg tools
+            </Typography>
+            {versions ? (
+              <List dense>
+                <ListItem>
+                  <ListItemText primary="yt-dlp" secondary={versions.ytdlp} />
+                </ListItem>
+                <ListItem>
+                  <ListItemText primary="ffmpeg" secondary={versions.ffmpeg} />
+                </ListItem>
+                <ListItem>
+                  <ListItemText primary="ffprobe" secondary={versions.ffprobe} />
+                </ListItem>
+                <ListItem>
+                  <ListItemText 
+                    primary="Last checked" 
+                    secondary={new Date(versions.lastChecked).toLocaleDateString()} 
+                  />
+                </ListItem>
+              </List>
+            ) : (
+              <Typography>Loading versions...</Typography>
+            )}
+            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={handleCheckUpdates}
+                disabled={checkingUpdates}
+              >
+                {checkingUpdates ? 'Checking...' : 'Check for Updates'}
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleRedownloadBinaries}
+              >
+                Redownload Binaries
+              </Button>
+            </Box>
+          </Paper>
 
-        <div className="setting-group">
-          <h2>Logs</h2>
-          <p className="setting-description">
-            Download logs are automatically saved for troubleshooting. Logs older than 30 days are automatically deleted.
-          </p>
-          {logStats && (
-            <div className="log-stats">
-              <p>
+          {/* Logs */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Logs
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Download logs are automatically saved for troubleshooting. Logs older than 30 days are automatically deleted.
+            </Typography>
+            {logStats && (
+              <Alert severity="info" sx={{ mb: 2 }}>
                 <strong>{logStats.count}</strong> log files • <strong>{logStats.sizeMB} MB</strong> total
-              </p>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={handleOpenLogs} className="secondary-btn">
-              Open Logs Folder
-            </button>
-            <button onClick={handleClearLogs} className="danger-btn">
-              Clear All Logs
-            </button>
-          </div>
-        </div>
+              </Alert>
+            )}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button variant="outlined" startIcon={<FolderOpenIcon />} onClick={handleOpenLogs}>
+                Open Logs Folder
+              </Button>
+              <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={handleClearLogs}>
+                Clear All Logs
+              </Button>
+            </Box>
+          </Paper>
 
-        <div className="setting-group">
-          <h2>About</h2>
-          <div className="about-content">
-            <p className="about-app">
-              <strong>Grabby v1.0.0</strong><br />
-              A cross-platform video downloader powered by yt-dlp
-            </p>
-            <p className="about-developer">
-              <strong>Developer:</strong> Geroen Joris
-            </p>
-            <p className="about-links">
-              <a 
-                href="#" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.open('https://github.com/gjoris/grabby', '_blank');
-                }}
-              >
-                GitHub Repository
-              </a>
-              {' • '}
-              <a 
-                href="#" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.open('https://github.com/gjoris/grabby/issues', '_blank');
-                }}
-              >
-                Report Issue
-              </a>
-            </p>
-            <p className="about-license">
-              Licensed under MIT License
-            </p>
-            <div className="about-dependencies">
-              <p><strong>Built with:</strong></p>
-              <ul>
-                <li>
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.open('https://github.com/yt-dlp/yt-dlp', '_blank');
-                    }}
-                  >
-                    yt-dlp
-                  </a>
-                  {' - Video downloader'}
-                </li>
-                <li>
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.open('https://ffmpeg.org/', '_blank');
-                    }}
-                  >
-                    FFmpeg
-                  </a>
-                  {' - Multimedia framework'}
-                </li>
-                <li>
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.open('https://www.electronjs.org/', '_blank');
-                    }}
-                  >
-                    Electron
-                  </a>
-                  {' - Desktop framework'}
-                </li>
-                <li>
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.open('https://react.dev/', '_blank');
-                    }}
-                  >
-                    React
-                  </a>
-                  {' - UI library'}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          {/* About */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              About
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Grabby v1.0.0
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  A cross-platform video downloader powered by yt-dlp
+                </Typography>
+              </Box>
+              
+              <Box>
+                <Typography variant="body2">
+                  <strong>Developer:</strong> Geroen Joris
+                </Typography>
+              </Box>
+
+              <Box>
+                <Link href="#" onClick={(e) => { e.preventDefault(); window.open('https://github.com/gjoris/grabby', '_blank'); }} sx={{ mr: 2 }}>
+                  GitHub Repository
+                </Link>
+                <Link href="#" onClick={(e) => { e.preventDefault(); window.open('https://github.com/gjoris/grabby/issues', '_blank'); }}>
+                  Report Issue
+                </Link>
+              </Box>
+
+              <Typography variant="caption" color="text.secondary">
+                Licensed under MIT License
+              </Typography>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  Built with:
+                </Typography>
+                <List dense>
+                  <ListItem disablePadding>
+                    <ListItemText 
+                      primary={
+                        <Link href="#" onClick={(e) => { e.preventDefault(); window.open('https://github.com/yt-dlp/yt-dlp', '_blank'); }}>
+                          yt-dlp
+                        </Link>
+                      }
+                      secondary="Video downloader"
+                    />
+                  </ListItem>
+                  <ListItem disablePadding>
+                    <ListItemText 
+                      primary={
+                        <Link href="#" onClick={(e) => { e.preventDefault(); window.open('https://ffmpeg.org/', '_blank'); }}>
+                          FFmpeg
+                        </Link>
+                      }
+                      secondary="Multimedia framework"
+                    />
+                  </ListItem>
+                  <ListItem disablePadding>
+                    <ListItemText 
+                      primary={
+                        <Link href="#" onClick={(e) => { e.preventDefault(); window.open('https://www.electronjs.org/', '_blank'); }}>
+                          Electron
+                        </Link>
+                      }
+                      secondary="Desktop framework"
+                    />
+                  </ListItem>
+                  <ListItem disablePadding>
+                    <ListItemText 
+                      primary={
+                        <Link href="#" onClick={(e) => { e.preventDefault(); window.open('https://react.dev/', '_blank'); }}>
+                          React
+                        </Link>
+                      }
+                      secondary="UI library"
+                    />
+                  </ListItem>
+                </List>
+              </Box>
+            </Box>
+          </Paper>
+
+        </Box>
+      </Container>
+    </Box>
   );
 }
 

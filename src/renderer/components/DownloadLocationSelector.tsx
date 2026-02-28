@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Paper, TextField, Button, Box, Typography } from '@mui/material';
+import FolderIcon from '@mui/icons-material/Folder';
 
 interface DownloadLocationSelectorProps {
   onLocationChange: (path: string) => void;
@@ -25,20 +27,29 @@ function DownloadLocationSelector({ onLocationChange }: DownloadLocationSelector
   };
 
   return (
-    <div className="download-location">
-      <label className="location-label">Save to:</label>
-      <div className="location-selector">
-        <input 
-          type="text" 
-          value={currentPath || 'Not set'} 
-          readOnly 
-          className="location-input"
+    <Paper elevation={2} sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="body2" sx={{ minWidth: 60, fontWeight: 500 }}>
+          Save to:
+        </Typography>
+        <TextField
+          fullWidth
+          value={currentPath || 'Not set'}
+          size="small"
+          InputProps={{
+            readOnly: true,
+          }}
         />
-        <button onClick={handleSelectFolder} className="location-btn">
-          📁 Change
-        </button>
-      </div>
-    </div>
+        <Button
+          variant="outlined"
+          startIcon={<FolderIcon />}
+          onClick={handleSelectFolder}
+          sx={{ minWidth: 120 }}
+        >
+          Change
+        </Button>
+      </Box>
+    </Paper>
   );
 }
 

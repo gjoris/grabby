@@ -1,3 +1,10 @@
+import { Paper, Box, Typography, LinearProgress, Chip, List, ListItem, ListItemIcon, ListItemText, Alert } from '@mui/material';
+import PendingIcon from '@mui/icons-material/HourglassEmpty';
+import DownloadingIcon from '@mui/icons-material/Download';
+import ProcessingIcon from '@mui/icons-material/Settings';
+import CompletedIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
 import { DownloadItem } from '../types/download';
 
 interface DownloadItemsListProps {
@@ -10,11 +17,11 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
 
   const getStatusIcon = (status: DownloadItem['status']) => {
     switch (status) {
-      case 'pending': return '⏳';
-      case 'downloading': return '⬇️';
-      case 'processing': return '⚙️';
-      case 'completed': return '✅';
-      case 'error': return '❌';
+      case 'pending': return <PendingIcon fontSize="small" />;
+      case 'downloading': return <DownloadingIcon fontSize="small" color="primary" />;
+      case 'processing': return <ProcessingIcon fontSize="small" color="secondary" />;
+      case 'completed': return <CompletedIcon fontSize="small" color="success" />;
+      case 'error': return <ErrorIcon fontSize="small" color="error" />;
     }
   };
 
@@ -28,42 +35,79 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
     }
   };
 
+  const getStatusColor = (status: DownloadItem['status']) => {
+    switch (status) {
+      case 'pending': return 'default';
+      case 'downloading': return 'primary';
+      case 'processing': return 'secondary';
+      case 'completed': return 'success';
+      case 'error': return 'error';
+      default: return 'default';
+    }
+  };
+
   return (
-    <div className="download-items">
+    <Paper elevation={3} sx={{ overflow: 'hidden' }}>
       {playlistName && (
-        <div className="playlist-header">
-          <h3>📋 {playlistName}</h3>
-          <span className="item-count">{items.length} items</span>
-        </div>
+        <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PlaylistPlayIcon />
+          <Typography variant="h6" sx={{ flex: 1 }}>
+            {playlistName}
+          </Typography>
+          <Chip label={`${items.length} items`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
+        </Box>
       )}
       
-      <div className="items-list">
-        {items.map((item, index) => (
-          <div key={item.id} className={`download-item ${item.status}`}>
-            <div className="item-header">
-              <span className="item-icon">{getStatusIcon(item.status)}</span>
-              <span className="item-title">{item.title}</span>
-              <span className="item-status">{getStatusText(item.status)}</span>
-            </div>
+      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+        {items.map((item) => (
+          <ListItem 
+            key={item.id}
+            sx={{ 
+              flexDirection: 'column', 
+              alignItems: 'stretch',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              '&:last-child': { borderBottom: 0 }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                {getStatusIcon(item.status)}
+              </ListItemIcon>
+              <ListItemText 
+                primary={item.title}
+                primaryTypographyProps={{ 
+                  noWrap: true,
+                  sx: { flex: 1 }
+                }}
+              />
+              <Chip 
+                label={getStatusText(item.status)} 
+                size="small" 
+                color={getStatusColor(item.status) as any}
+                variant="outlined"
+              />
+            </Box>
             
             {(item.status === 'downloading' || item.status === 'processing') && (
-              <div className="item-progress-bar">
-                <div 
-                  className="item-progress-fill" 
-                  style={{ width: `${item.progress}%` }}
+              <Box sx={{ width: '100%', mt: 1 }}>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={item.progress} 
+                  sx={{ height: 6, borderRadius: 3 }}
                 />
-              </div>
+              </Box>
             )}
             
             {item.error && (
-              <div className="item-error">
+              <Alert severity="error" sx={{ mt: 1, width: '100%' }}>
                 {item.error}
-              </div>
+              </Alert>
             )}
-          </div>
+          </ListItem>
         ))}
-      </div>
-    </div>
+      </List>
+    </Paper>
   );
 }
 
