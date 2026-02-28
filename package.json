@@ -33,6 +33,10 @@
     "wait-on": "^9.0.4"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
     "adm-zip": "^0.5.16",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
