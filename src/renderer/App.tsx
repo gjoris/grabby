@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Settings from './Settings';
 
 declare global {
   interface Window {
@@ -36,7 +37,7 @@ function App() {
   const [downloadType, setDownloadType] = useState<DownloadType>('mp3');
   const [binaryProgress, setBinaryProgress] = useState<Record<string, BinaryProgress>>({});
   const [isReady, setIsReady] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [currentView, setCurrentView] = useState<'main' | 'settings'>('main');
   const [settings, setSettings] = useState<Settings>({ downloadPath: '' });
 
   // Check binaries on mount
@@ -90,12 +91,12 @@ function App() {
     }
   };
 
-  const handleSelectFolder = async () => {
-    const result = await window.electronAPI.selectFolder();
-    if (result) {
-      setSettings({ downloadPath: result });
-      await window.electronAPI.saveSettings({ downloadPath: result });
-    }
+  const handleBackFromSettings = () => {
+    setCurrentView('main');
+    // Reload settings in case they changed
+    window.electronAPI.getSettings().then(result => {
+      setSettings(result);
+    });
   };
 
   // Listen for progress updates
@@ -109,6 +110,10 @@ function App() {
 
   const hasBinaryDownloads = Object.keys(binaryProgress).length > 0;
 
+  if (currentView === 'settings') {
+    return <Settings onBack={handleBackFromSettings} />;
+  }
+
   return (
     <div className="app">
       <header>
@@ -116,34 +121,11 @@ function App() {
         <p>Download videos with ease</p>
         <button 
           className="settings-btn"
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => setCurrentView('settings')}
         >
           ⚙️
         </button>
       </header>
-
-      {showSettings && (
-        <div className="settings-panel">
-          <h2>Settings</h2>
-          <div className="setting-item">
-            <label>Download Location</label>
-            <div className="folder-selector">
-              <input 
-                type="text" 
-                value={settings.downloadPath || 'Not set'} 
-                readOnly 
-              />
-              <button onClick={handleSelectFolder}>Browse</button>
-            </div>
-          </div>
-          <button 
-            className="close-settings"
-            onClick={() => setShowSettings(false)}
-          >
-            Close
-          </button>
-        </div>
-      )}
 
       {hasBinaryDownloads && !isReady && (
         <div className="binary-download">
