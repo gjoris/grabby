@@ -4,6 +4,7 @@ import Header from './components/Header';
 import BinaryDownloadProgress from './components/BinaryDownloadProgress';
 import DownloadForm from './components/DownloadForm';
 import DownloadItemsList from './components/DownloadItemsList';
+import DownloadLocationSelector from './components/DownloadLocationSelector';
 import { useBinarySetup } from './hooks/useBinarySetup';
 import { useDownload } from './hooks/useDownload';
 import { useDownloadItems } from './hooks/useDownloadItems';
@@ -12,10 +13,12 @@ import { DownloadType } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState<'main' | 'settings'>('main');
+  const [customDownloadPath, setCustomDownloadPath] = useState<string>('');
   
   const { isReady, binaryProgress, hasBinaryDownloads } = useBinarySetup();
   const { settings, loadSettings } = useSettings();
-  const { isDownloading, startDownload } = useDownload(settings.downloadPath);
+  const downloadPath = customDownloadPath || settings.downloadPath;
+  const { isDownloading, startDownload } = useDownload(downloadPath);
   const { items, playlistName, reset } = useDownloadItems();
 
   const handleDownload = (url: string, type: DownloadType) => {
@@ -23,9 +26,14 @@ function App() {
     startDownload(url, type);
   };
 
+  const handleLocationChange = (path: string) => {
+    setCustomDownloadPath(path);
+  };
+
   const handleBackFromSettings = () => {
     setCurrentView('main');
     loadSettings();
+    setCustomDownloadPath(''); // Reset to default after settings change
   };
 
   if (currentView === 'settings') {
@@ -46,6 +54,7 @@ function App() {
             onDownload={handleDownload}
             isDownloading={isDownloading}
           />
+          <DownloadLocationSelector onLocationChange={handleLocationChange} />
           <DownloadItemsList 
             items={items}
             playlistName={playlistName}
