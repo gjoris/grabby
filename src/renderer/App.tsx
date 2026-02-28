@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, Box } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, Box, Container } from '@mui/material';
 import Settings from './Settings';
 import Header from './components/Header';
 import BinaryDownloadProgress from './components/BinaryDownloadProgress';
 import DownloadForm from './components/DownloadForm';
-import DownloadItemsList from './components/DownloadItemsList';
+import DownloadTable from './components/DownloadTable';
 import DownloadLocationSelector from './components/DownloadLocationSelector';
 import { useBinarySetup } from './hooks/useBinarySetup';
 import { useDownload } from './hooks/useDownload';
@@ -21,13 +21,40 @@ const theme = createTheme({
     secondary: {
       main: '#764ba2',
     },
+    background: {
+      default: '#f5f7fa',
+      paper: '#ffffff',
+    }
   },
   typography: {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    button: {
+      textTransform: 'none',
+      fontWeight: 600,
+    }
   },
   shape: {
     borderRadius: 8,
   },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }
+        }
+      }
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        }
+      }
+    }
+  }
 });
 
 function App() {
@@ -38,11 +65,11 @@ function App() {
   const { settings, loadSettings } = useSettings();
   const downloadPath = customDownloadPath || settings.downloadPath;
   const { isDownloading, startDownload } = useDownload(downloadPath);
-  const { items, playlistName, reset } = useDownloadItems();
+  const { items, playlistName, startNewDownload } = useDownloadItems();
 
   const handleDownload = (url: string, type: DownloadType) => {
-    reset();
-    startDownload(url, type);
+    const jobId = startNewDownload();
+    startDownload(url, type, jobId);
   };
 
   const handleLocationChange = (path: string) => {
@@ -57,6 +84,12 @@ function App() {
 
   const handleRedownloadBinaries = () => {
     setCurrentView('main');
+  };
+
+  const handleOpenFolder = (path: string) => {
+    // Implement folder opening logic here if needed, 
+    // or rely on the main process to handle it via a new IPC event
+    console.log('Open folder:', path);
   };
 
   if (currentView === 'settings') {
@@ -76,52 +109,67 @@ function App() {
         display: 'flex', 
         flexDirection: 'column',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        overflow: 'hidden'
       }}>
         <Header onSettingsClick={() => setCurrentView('settings')} />
 
         {hasBinaryDownloads && !isReady && (
-          <BinaryDownloadProgress binaryProgress={binaryProgress} />
+          <Container maxWidth="md" sx={{ mt: 10 }}>
+            <BinaryDownloadProgress binaryProgress={binaryProgress} />
+          </Container>
         )}
 
         {isReady && (
-          <>
+          <Container maxWidth="xl" sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 3,
+            p: 4,
+            overflow: 'hidden'
+          }}>
+            {/* Action Area */}
             <Box sx={{ 
               display: 'flex', 
               flexDirection: 'column', 
               gap: 2,
-              maxWidth: 900,
-              width: '100%',
-              mx: 'auto',
-              px: 3,
-              pt: 3,
-              flexShrink: 0,
+              animation: 'fadeInDown 0.5s ease-out'
             }}>
               <DownloadForm 
                 onDownload={handleDownload}
-                isDownloading={isDownloading}
+                isDownloading={false}
               />
               <DownloadLocationSelector onLocationChange={handleLocationChange} />
             </Box>
             
+            {/* Data Area */}
             <Box sx={{ 
               flex: 1, 
               display: 'flex', 
               flexDirection: 'column',
-              maxWidth: 900,
-              width: '100%',
-              mx: 'auto',
-              px: 3,
-              pb: 3,
-              overflow: 'hidden',
               minHeight: 0,
+              position: 'relative',
+              animation: 'fadeInUp 0.5s ease-out'
             }}>
-              <DownloadItemsList 
-                items={items}
-                playlistName={playlistName}
+              <DownloadTable 
+                items={items} 
+                onOpenFolder={handleOpenFolder}
               />
             </Box>
-          </>
+          </Container>
         )}
+        <style>
+          {`
+            @keyframes fadeInDown {
+              from { opacity: 0; transform: translateY(-20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes fadeInUp {
+              from { opacity: 0; transform: translateY(20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}
+        </style>
       </Box>
     </ThemeProvider>
   );
