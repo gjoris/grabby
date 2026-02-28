@@ -10,6 +10,9 @@ declare global {
       onBinaryDownloadProgress: (callback: (data: { binary: string; progress: number; status: string }) => void) => void;
       onBinariesReady: (callback: () => void) => void;
       checkBinaries: () => Promise<{ ready: boolean; missing: string[] }>;
+      selectFolder: () => Promise<string | null>;
+      getSettings: () => Promise<{ downloadPath: string }>;
+      saveSettings: (settings: { downloadPath: string }) => Promise<void>;
     };
   }
 }
@@ -22,6 +25,10 @@ interface BinaryProgress {
   status: string;
 }
 
+interface Settings {
+  downloadPath: string;
+}
+
 function App() {
   const [url, setUrl] = useState('');
   const [progress, setProgress] = useState('');
@@ -29,11 +36,16 @@ function App() {
   const [downloadType, setDownloadType] = useState<DownloadType>('mp3');
   const [binaryProgress, setBinaryProgress] = useState<Record<string, BinaryProgress>>({});
   const [isReady, setIsReady] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<Settings>({ downloadPath: '' });
 
   // Check binaries on mount
   useState(() => {
     window.electronAPI.checkBinaries().then(result => {
       setIsReady(result.ready);
+    });
+    window.electronAPI.getSettings().then(result => {
+      setSettings(result);
     });
   });
 
@@ -62,11 +74,11 @@ function App() {
             format: 'bestaudio/best',
             extractAudio: true,
             audioFormat: 'mp3',
-            output: '~/Downloads/%(title)s.%(ext)s'
+            output: `${settings.downloadPath}/%(title)s.%(ext)s`
           }
         : {
             format: 'bestvideo+bestaudio/best',
-            output: '~/Downloads/%(title)s.%(ext)s'
+            output: `${settings.downloadPath}/%(title)s.%(ext)s`
           };
 
       await window.electronAPI.download(url, options);
@@ -75,6 +87,14 @@ function App() {
       setProgress(`Error: ${error}`);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleSelectFolder = async () => {
+    const result = await window.electronAPI.selectFolder();
+    if (result) {
+      setSettings({ downloadPath: result });
+      await window.electronAPI.saveSettings({ downloadPath: result });
     }
   };
 
@@ -94,7 +114,36 @@ function App() {
       <header>
         <h1>🎯 Grabby</h1>
         <p>Download videos with ease</p>
+        <button 
+          className="settings-btn"
+          onClick={() => setShowSettings(!showSettings)}
+        >
+          ⚙️
+        </button>
       </header>
+
+      {showSettings && (
+        <div className="settings-panel">
+          <h2>Settings</h2>
+          <div className="setting-item">
+            <label>Download Location</label>
+            <div className="folder-selector">
+              <input 
+                type="text" 
+                value={settings.downloadPath || 'Not set'} 
+                readOnly 
+              />
+              <button onClick={handleSelectFolder}>Browse</button>
+            </div>
+          </div>
+          <button 
+            className="close-settings"
+            onClick={() => setShowSettings(false)}
+          >
+            Close
+          </button>
+        </div>
+      )}
 
       {hasBinaryDownloads && !isReady && (
         <div className="binary-download">
