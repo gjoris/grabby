@@ -19,19 +19,31 @@ function getSettingsPath(): string {
 
 function loadSettings(): Settings {
   const settingsPath = getSettingsPath();
+  const defaultSettings: Settings = {
+    downloadPath: app.getPath('downloads')
+  };
+  
   try {
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf-8');
-      return JSON.parse(data);
+      const settings = JSON.parse(data);
+      
+      // If downloadPath is empty or not set, use default
+      if (!settings.downloadPath || settings.downloadPath.trim() === '') {
+        settings.downloadPath = defaultSettings.downloadPath;
+        // Save the updated settings
+        saveSettings(settings);
+      }
+      
+      return settings;
     }
   } catch (error) {
     console.error('Failed to load settings:', error);
   }
   
-  // Default settings
-  return {
-    downloadPath: app.getPath('downloads')
-  };
+  // Return default settings and save them
+  saveSettings(defaultSettings);
+  return defaultSettings;
 }
 
 function saveSettings(settings: Settings): void {
