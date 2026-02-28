@@ -10,7 +10,7 @@
 
 A user-friendly desktop application for downloading videos and audio from YouTube and thousands of other websites, built with Electron and React.
 
-[Download](https://github.com/gjoris/grabby/releases) • [Features](#-features) • [Installation](#-installation) • [Development](#-development)
+[Download](https://github.com/gjoris/grabby/releases) • [Features](#-features) • [Installation](#-installation) • [Development](#-development) • [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -39,6 +39,8 @@ Download the latest version for your platform:
 - **Linux**: `Grabby-x.x.x.AppImage` or `Grabby-x.x.x.tar.gz`
 
 👉 [Download the latest release](https://github.com/gjoris/grabby/releases/latest)
+
+See the [CHANGELOG](CHANGELOG.md) for details about each release.
 
 ### Installation Instructions
 
