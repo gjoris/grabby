@@ -73,6 +73,10 @@
     "mac": {
       "icon": "resources/icon.png",
       "category": "public.app-category.utilities",
+      "identity": "Developer ID Application: Geroen Joris",
+      "certificateFile": "certs/macos.p12",
+      "certificatePassword": "${CSC_KEY_PASSWORD}",
+      "signingIdentity": "Developer ID Application: Geroen Joris",
       "target": [
         {
           "target": "dmg",
