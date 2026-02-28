@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { checkAndDownloadBinaries, getBinaryPath } from './binaryManager';
+import { LogService } from './services/logService';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -60,6 +61,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  // Initialize logging service
+  LogService.initialize();
+  
   createWindow();
   
   const binariesReady = await checkAndDownloadBinaries((binary, progress, status) => {
@@ -92,6 +96,11 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
     const ytdlpPath = getBinaryPath('yt-dlp');
     const ffmpegPath = path.dirname(getBinaryPath('ffmpeg'));
     
+    // Start logging
+    const logFile = LogService.startDownloadLog();
+    LogService.log(`Download started for URL: ${url}`);
+    LogService.log(`Options: ${JSON.stringify(options, null, 2)}`);
+    
     const args = [
       url,
       '--ffmpeg-location', ffmpegPath,
@@ -114,6 +123,8 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
       args.push('-o', options.output);
     }
 
+    LogService.log(`Executing: ${ytdlpPath} ${args.join(' ')}`);
+
     const ytdlp = spawn(ytdlpPath, args);
     
     let lastLine = '';
@@ -121,6 +132,9 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
     ytdlp.stdout.on('data', (data) => {
       const lines = data.toString().split('\n').filter((line: string) => line.trim());
       lines.forEach((line: string) => {
+        // Log everything to file
+        LogService.log(line, 'info');
+        
         // Only send if different from last line to avoid duplicates
         if (line !== lastLine) {
           event.sender.send('download-progress', line);
@@ -131,6 +145,9 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
 
     ytdlp.stderr.on('data', (data) => {
       const text = data.toString();
+      // Log all stderr to file
+      LogService.log(text, 'error');
+      
       // Only send actual errors, not warnings
       if (text.includes('ERROR:')) {
         event.sender.send('download-error', text);
@@ -138,8 +155,11 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
     });
 
     ytdlp.on('close', (code) => {
+      LogService.log(`Process exited with code: ${code}`);
+      LogService.endDownloadLog(code === 0);
+      
       if (code === 0) {
-        resolve({ success: true });
+        resolve({ success: true, logFile });
       } else {
         reject(new Error(`yt-dlp exited with code ${code}`));
       }
@@ -214,4 +234,16 @@ ipcMain.handle('select-folder', async () => {
   }
   
   return result.filePaths[0];
+});
+
+// Get logs directory
+ipcMain.handle('get-logs-directory', async () => {
+  return LogService.getLogDirectory();
+});
+
+// Open logs directory in file explorer
+ipcMain.handle('open-logs-directory', async () => {
+  const { shell } = require('electron');
+  const logsDir = LogService.getLogDirectory();
+  shell.openPath(logsDir);
 });
