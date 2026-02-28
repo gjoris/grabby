@@ -24,6 +24,7 @@ declare global {
       getLogStats: () => Promise<{ count: number; sizeBytes: number; sizeMB: string }>;
       clearLogs: () => Promise<boolean>;
       getBinaryVersions: () => Promise<any>;
+      getAppVersion: () => Promise<string>;
       checkForUpdates: () => Promise<any>;
       redownloadBinaries: () => Promise<boolean>;
     };
@@ -113,6 +114,10 @@ export class ElectronAPIService {
 
   static async getBinaryVersions(): Promise<any> {
     return window.electronAPI.getBinaryVersions();
+  }
+
+  static async getAppVersion(): Promise<string> {
+    return window.electronAPI.getAppVersion();
   }
 
   static async checkForUpdates(): Promise<any> {

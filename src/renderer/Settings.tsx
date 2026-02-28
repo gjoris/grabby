@@ -35,10 +35,12 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
   const [versions, setVersions] = useState<BinaryVersions | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [logStats, setLogStats] = useState<LogStats | null>(null);
+  const [appVersion, setAppVersion] = useState<string>('');
 
   useEffect(() => {
     loadVersions();
     loadLogStats();
+    loadAppVersion();
   }, []);
 
   const loadVersions = async () => {
@@ -49,6 +51,11 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
   const loadLogStats = async () => {
     const result = await ElectronAPIService.getLogStats();
     setLogStats(result);
+  };
+
+  const loadAppVersion = async () => {
+    const version = await ElectronAPIService.getAppVersion();
+    setAppVersion(version);
   };
 
   const handleOpenLogs = async () => {
@@ -220,7 +227,7 @@ function Settings({ onBack, onRedownloadBinaries }: SettingsProps) {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box>
                 <Typography variant="subtitle1" fontWeight={600}>
-                  Grabby v1.0.0
+                  Grabby v{appVersion}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   A cross-platform video downloader powered by yt-dlp

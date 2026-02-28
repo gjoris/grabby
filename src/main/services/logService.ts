@@ -27,16 +27,20 @@ export class LogService {
     const logFileName = `app-${date}.log`;
     this.appLogFile = path.join(this.logDir, logFileName);
     
+    // Get app version
+    const packageJson = require('../../../package.json');
+    const appVersion = packageJson.version;
+    
     // Only write header if file doesn't exist
     if (!fs.existsSync(this.appLogFile)) {
       const header = this.formatLogLine('INFO', '='.repeat(80));
-      const startLine = this.formatLogLine('INFO', `Application started - Grabby v1.0.0`);
+      const startLine = this.formatLogLine('INFO', `Application started - Grabby v${appVersion}`);
       const separator = this.formatLogLine('INFO', '='.repeat(80));
       
       fs.writeFileSync(this.appLogFile, `${header}${startLine}${separator}`);
     } else {
       // Append session start to existing log
-      const sessionStart = this.formatLogLine('INFO', `New session started`);
+      const sessionStart = this.formatLogLine('INFO', `New session started (v${appVersion})`);
       fs.appendFileSync(this.appLogFile, sessionStart);
     }
 

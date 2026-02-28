@@ -7,6 +7,10 @@ import { LogService } from './services/logService';
 import { DownloadParser } from './services/downloadParser';
 import { VersionManager } from './services/versionManager';
 
+// Get app version from package.json
+const packageJson = require('../../package.json');
+const APP_VERSION = packageJson.version;
+
 let mainWindow: BrowserWindow | null = null;
 
 interface Settings {
@@ -99,7 +103,7 @@ app.whenReady().then(async () => {
   LogService.initialize();
   VersionManager.initialize();
   
-  LogService.appLog('Application ready, initializing...', 'info');
+  LogService.appLog(`Application ready, initializing... (v${APP_VERSION})`, 'info');
   LogService.appLog(`Platform: ${process.platform}`, 'info');
   LogService.appLog(`Electron version: ${process.versions.electron}`, 'info');
   LogService.appLog(`Node version: ${process.versions.node}`, 'info');
@@ -427,6 +431,11 @@ ipcMain.handle('get-binary-versions', async () => {
   }
   
   return versions;
+});
+
+// Get app version
+ipcMain.handle('get-app-version', async () => {
+  return APP_VERSION;
 });
 
 // Check for updates
