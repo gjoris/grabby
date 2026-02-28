@@ -9,18 +9,19 @@ import { VersionManager } from './services/versionManager';
 const DOWNLOAD_URLS = {
   darwin: {
     ytdlp: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
-    ffmpeg: 'https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip',
+    // BtbN doesn't provide macOS builds, use evermeet.cx (trusted source)
+    ffmpeg: 'https://evermeet.cx/ffmpeg/getrelease/zip',
     ffprobe: 'https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip'
   },
   win32: {
     ytdlp: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
-    ffmpeg: 'https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip',
-    ffprobe: 'https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip'
+    ffmpeg: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
+    ffprobe: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip'
   },
   linux: {
     ytdlp: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp',
-    ffmpeg: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz',
-    ffprobe: 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz'
+    ffmpeg: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz',
+    ffprobe: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz'
   }
 };
 
@@ -68,23 +69,35 @@ async function downloadFile(url: string, dest: string, onProgress?: (progress: n
   });
 }
 
-async function extractZip(zipPath: string, destDir: string, fileName: string): Promise<void> {
-  const AdmZip = require('adm-zip');
-  const zip = new AdmZip(zipPath);
-  const entries = zip.getEntries();
+async function extractArchive(archivePath: string, destDir: string, binaryName: string, platform: 'darwin' | 'win32' | 'linux'): Promise<void> {
+  const ext = platform === 'win32' ? '.exe' : '';
+  const finalPath = path.join(destDir, `${binaryName}${ext}`);
   
-  for (const entry of entries) {
-    if (entry.entryName.endsWith(fileName) || entry.entryName === fileName) {
-      zip.extractEntryTo(entry, destDir, false, true, false, fileName);
-      
-      // Set executable permissions
-      const extractedPath = path.join(destDir, fileName);
-      fs.chmodSync(extractedPath, 0o755);
-      break;
+  if (archivePath.endsWith('.zip')) {
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip(archivePath);
+    const entries = zip.getEntries();
+    
+    // Find the binary in the zip (might be in a subdirectory)
+    for (const entry of entries) {
+      const entryName = entry.entryName.toLowerCase();
+      if (entryName.endsWith(`${binaryName}${ext}`) || entryName.endsWith(`${binaryName}${ext.toLowerCase()}`)) {
+        zip.extractEntryTo(entry, destDir, false, true, false, `${binaryName}${ext}`);
+        fs.chmodSync(finalPath, 0o755);
+        break;
+      }
     }
+    
+    fs.unlinkSync(archivePath);
+  } else if (archivePath.endsWith('.tar.xz')) {
+    // For Linux tar.xz files, we need to extract differently
+    const { execSync } = require('child_process');
+    execSync(`tar -xJf "${archivePath}" -C "${destDir}" --strip-components=2 --wildcards "*/bin/${binaryName}"`, {
+      stdio: 'ignore'
+    });
+    fs.chmodSync(finalPath, 0o755);
+    fs.unlinkSync(archivePath);
   }
-  
-  fs.unlinkSync(zipPath);
 }
 
 async function downloadBinary(
@@ -99,23 +112,20 @@ async function downloadBinary(
   
   fs.mkdirSync(destDir, { recursive: true });
   
-  if ((name === 'ffmpeg' || name === 'ffprobe') && platform === 'darwin') {
-    const tempZip = path.join(destDir, `${name}.zip`);
+  // Check if we need to extract an archive
+  const needsExtraction = (name === 'ffmpeg' || name === 'ffprobe');
+  
+  if (needsExtraction) {
+    const ext = url.endsWith('.tar.xz') ? '.tar.xz' : '.zip';
+    const tempArchive = path.join(destDir, `${name}${ext}`);
+    
     onProgress?.(0, 'Downloading...');
-    await downloadFile(url, tempZip, (progress) => {
+    await downloadFile(url, tempArchive, (progress) => {
       onProgress?.(Math.round(progress * 0.9), 'Downloading...');
     });
+    
     onProgress?.(90, 'Extracting...');
-    await extractZip(tempZip, destDir, name);
-    onProgress?.(100, 'Complete');
-  } else if ((name === 'ffmpeg' || name === 'ffprobe') && platform === 'win32') {
-    const tempZip = path.join(destDir, 'ffmpeg.zip');
-    onProgress?.(0, 'Downloading...');
-    await downloadFile(url, tempZip, (progress) => {
-      onProgress?.(Math.round(progress * 0.9), 'Downloading...');
-    });
-    onProgress?.(90, 'Extracting...');
-    await extractZip(tempZip, destDir, `${name}.exe`);
+    await extractArchive(tempArchive, destDir, name, platform);
     onProgress?.(100, 'Complete');
   } else {
     onProgress?.(0, 'Downloading...');
@@ -132,8 +142,9 @@ async function downloadBinary(
       VersionManager.recordInstallation('ytdlp', version);
     }
   } else {
-    // For ffmpeg/ffprobe, record as installed
-    VersionManager.recordInstallation(name, 'latest');
+    // For ffmpeg/ffprobe, get actual version from binary
+    const version = await VersionManager.getBinaryVersion(dest, name);
+    VersionManager.recordInstallation(name, version);
   }
 }
 
