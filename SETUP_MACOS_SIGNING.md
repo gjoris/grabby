@@ -21,50 +21,59 @@ You need:
 
 ## Step 1: Create a Self-Signed Certificate
 
+### Option A: Using OpenSSL (Command line)
+
 Run these commands on your Mac:
 
 ```bash
+# Create a private key
+openssl genrsa -out ~/Desktop/macos.key 2048
+
 # Create a self-signed certificate valid for 10 years
-security create-self-signed-cert \
-  "Developer ID Application: Geroen Joris" \
-  -k ~/Library/Keychains/login.keychain \
-  -s 3650 \
-  -t csrReqExt \
-  -p "csrExtensionNames=CodeSigningExt"
+openssl req -new -x509 -key ~/Desktop/macos.key -out ~/Desktop/macos.crt -days 3650 \
+  -subj "/CN=Developer ID Application: Geroen Joris"
+
+# Convert to PKCS12 format (.p12) with a password
+openssl pkcs12 -export -in ~/Desktop/macos.crt -inkey ~/Desktop/macos.key \
+  -out ~/Desktop/macos.p12 -name "Developer ID Application: Geroen Joris" \
+  -passout pass:YourPassword
+
+# Import into keychain
+security import ~/Desktop/macos.p12 -k ~/Library/Keychains/login.keychain \
+  -P YourPassword -T /usr/bin/codesign -T /usr/bin/security
+
+# Clean up temporary files
+rm ~/Desktop/macos.key ~/Desktop/macos.crt
 ```
 
-Or use Keychain Access GUI:
-1. Open Keychain Access
-2. Keychain Access → Certificate Assistant → Create a Certificate
-3. Name: `Developer ID Application: Geroen Joris`
-4. Identity Type: Self Signed Root
-5. Certificate Type: Code Signing
-6. Validity: 3650 days (10 years)
+When prompted for the export password, use a strong password (you'll need it in Step 3).
+
+### Option B: Using Keychain Access GUI (Easier)
+
+1. Open **Keychain Access** (Applications → Utilities)
+2. Go to **Keychain Access** → **Certificate Assistant** → **Create a Certificate...**
+3. Fill in:
+   - Name: `Developer ID Application: Geroen Joris`
+   - Identity Type: **Self Signed Root**
+   - Certificate Type: **Code Signing**
+   - Validity: **3650 days** (10 years)
+4. Click **Create**
+5. The certificate is now in your keychain
 
 ## Step 2: Export the Certificate
 
-Export the certificate in PKCS12 format (.p12):
+### If you used OpenSSL (Option A):
+The certificate is already in PKCS12 format at `~/Desktop/macos.p12` ✓
 
-```bash
-# List your certificates to find the right one
-security find-certificate -c "Developer ID Application: Geroen Joris" ~/Library/Keychains/login.keychain
+### If you used Keychain Access (Option B):
+Export the certificate in PKCS12 format:
 
-# Export to PKCS12 format
-security export-cert \
-  -k ~/Library/Keychains/login.keychain \
-  -t agg \
-  -f pkcs12 \
-  -o ~/Desktop/macos.p12 \
-  -p "YourCertificatePassword" \
-  -P "YourExportPassword" \
-  "Developer ID Application: Geroen Joris"
-```
-
-**Troubleshooting**: If the above doesn't work, use macOS Keychain Access:
-1. Open Keychain Access
-2. Find "Developer ID Application: Geroen Joris"
-3. Right-click → Export
-4. Save as `macos.p12` with a strong password
+1. Open **Keychain Access**
+2. Find **Developer ID Application: Geroen Joris** in the Certificates tab
+3. Right-click → **Export**
+4. Save as `macos.p12`
+5. Set a strong password (you'll need it in Step 3)
+6. Click **Save**
 
 ## Step 3: Encode and Add to GitHub Secrets
 
