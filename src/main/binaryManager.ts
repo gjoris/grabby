@@ -33,15 +33,27 @@ function binaryExists(binaryPath: string): boolean {
   return fs.existsSync(binaryPath);
 }
 
-async function downloadFile(url: string, dest: string): Promise<void> {
+async function downloadFile(url: string, dest: string, onProgress?: (progress: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
       if (response.statusCode === 302 || response.statusCode === 301) {
-        downloadFile(response.headers.location!, dest).then(resolve).catch(reject);
+        downloadFile(response.headers.location!, dest, onProgress).then(resolve).catch(reject);
         return;
       }
       
+      const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+      let downloadedSize = 0;
+      
       const file = createWriteStream(dest);
+      
+      response.on('data', (chunk) => {
+        downloadedSize += chunk.length;
+        if (totalSize > 0 && onProgress) {
+          const progress = Math.round((downloadedSize / totalSize) * 100);
+          onProgress(progress);
+        }
+      });
+      
       pipeline(response, file)
         .then(() => {
           fs.chmodSync(dest, 0o755);
@@ -67,7 +79,11 @@ async function extractZip(zipPath: string, destDir: string, fileName: string): P
   fs.unlinkSync(zipPath);
 }
 
-async function downloadBinary(name: 'ytdlp' | 'ffmpeg', platform: 'darwin' | 'win32' | 'linux'): Promise<void> {
+async function downloadBinary(
+  name: 'ytdlp' | 'ffmpeg', 
+  platform: 'darwin' | 'win32' | 'linux',
+  onProgress?: (progress: number, status: string) => void
+): Promise<void> {
   const url = DOWNLOAD_URLS[platform][name];
   const binaryName = name === 'ytdlp' ? 'yt-dlp' : 'ffmpeg';
   const dest = getBinaryPath(binaryName);
@@ -77,18 +93,34 @@ async function downloadBinary(name: 'ytdlp' | 'ffmpeg', platform: 'darwin' | 'wi
   
   if (name === 'ffmpeg' && platform === 'darwin') {
     const tempZip = path.join(destDir, 'ffmpeg.zip');
-    await downloadFile(url, tempZip);
+    onProgress?.(0, 'Downloading...');
+    await downloadFile(url, tempZip, (progress) => {
+      onProgress?.(Math.round(progress * 0.9), 'Downloading...');
+    });
+    onProgress?.(90, 'Extracting...');
     await extractZip(tempZip, destDir, 'ffmpeg');
+    onProgress?.(100, 'Complete');
   } else if (name === 'ffmpeg' && platform === 'win32') {
     const tempZip = path.join(destDir, 'ffmpeg.zip');
-    await downloadFile(url, tempZip);
+    onProgress?.(0, 'Downloading...');
+    await downloadFile(url, tempZip, (progress) => {
+      onProgress?.(Math.round(progress * 0.9), 'Downloading...');
+    });
+    onProgress?.(90, 'Extracting...');
     await extractZip(tempZip, destDir, 'ffmpeg.exe');
+    onProgress?.(100, 'Complete');
   } else {
-    await downloadFile(url, dest);
+    onProgress?.(0, 'Downloading...');
+    await downloadFile(url, dest, (progress) => {
+      onProgress?.(progress, 'Downloading...');
+    });
+    onProgress?.(100, 'Complete');
   }
 }
 
-export async function checkAndDownloadBinaries(): Promise<boolean> {
+export async function checkAndDownloadBinaries(
+  onProgress?: (binary: string, progress: number, status: string) => void
+): Promise<boolean> {
   const platform = process.platform as 'darwin' | 'win32' | 'linux';
   const ytdlpPath = getBinaryPath('yt-dlp');
   const ffmpegPath = getBinaryPath('ffmpeg');
@@ -120,18 +152,15 @@ export async function checkAndDownloadBinaries(): Promise<boolean> {
   
   try {
     if (!ytdlpExists) {
-      await downloadBinary('ytdlp', platform);
+      await downloadBinary('ytdlp', platform, (progress, status) => {
+        onProgress?.('yt-dlp', progress, status);
+      });
     }
     if (!ffmpegExists) {
-      await downloadBinary('ffmpeg', platform);
+      await downloadBinary('ffmpeg', platform, (progress, status) => {
+        onProgress?.('ffmpeg', progress, status);
+      });
     }
-    
-    await dialog.showMessageBox({
-      type: 'info',
-      title: 'Download Complete',
-      message: 'All dependencies downloaded successfully!',
-      buttons: ['OK']
-    });
     
     return true;
   } catch (error) {
