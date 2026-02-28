@@ -21,6 +21,8 @@ declare global {
       saveSettings: (settings: Settings) => Promise<void>;
       getLogsDirectory: () => Promise<string>;
       openLogsDirectory: () => Promise<void>;
+      getBinaryVersions: () => Promise<any>;
+      checkForUpdates: () => Promise<any>;
     };
   }
 }
@@ -96,5 +98,13 @@ export class ElectronAPIService {
 
   static async openLogsDirectory(): Promise<void> {
     return window.electronAPI.openLogsDirectory();
+  }
+
+  static async getBinaryVersions(): Promise<any> {
+    return window.electronAPI.getBinaryVersions();
+  }
+
+  static async checkForUpdates(): Promise<any> {
+    return window.electronAPI.checkForUpdates();
   }
 }

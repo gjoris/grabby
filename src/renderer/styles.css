@@ -469,3 +469,32 @@ main::-webkit-scrollbar-thumb:hover,
 .settings-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
+
+.versions-list {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.version-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.version-item:last-child {
+  border-bottom: none;
+}
+
+.version-label {
+  font-weight: 600;
+  color: #666;
+}
+
+.version-value {
+  color: #333;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+}

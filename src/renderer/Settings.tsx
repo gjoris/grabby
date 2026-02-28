@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useSettings } from './hooks/useSettings';
 import { ElectronAPIService } from './services/electronAPI';
 
@@ -5,11 +6,46 @@ interface SettingsProps {
   onBack: () => void;
 }
 
+interface BinaryVersions {
+  ytdlp: string;
+  ffmpeg: string;
+  ffprobe: string;
+  lastChecked: string;
+}
+
 function Settings({ onBack }: SettingsProps) {
   const { settings, selectFolder } = useSettings();
+  const [versions, setVersions] = useState<BinaryVersions | null>(null);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+
+  useEffect(() => {
+    loadVersions();
+  }, []);
+
+  const loadVersions = async () => {
+    const result = await ElectronAPIService.getBinaryVersions();
+    setVersions(result);
+  };
 
   const handleOpenLogs = async () => {
     await ElectronAPIService.openLogsDirectory();
+  };
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdates(true);
+    try {
+      const result = await ElectronAPIService.checkForUpdates();
+      if (result.hasUpdates && result.ytdlpUpdate) {
+        alert(`Update available for yt-dlp: ${result.ytdlpUpdate}\n\nPlease download the latest version from the releases page.`);
+      } else {
+        alert('All binaries are up to date!');
+      }
+      await loadVersions();
+    } catch (error) {
+      alert('Failed to check for updates');
+    } finally {
+      setCheckingUpdates(false);
+    }
   };
 
   return (
@@ -35,6 +71,44 @@ function Settings({ onBack }: SettingsProps) {
             />
             <button onClick={selectFolder}>Browse</button>
           </div>
+        </div>
+
+        <div className="setting-group">
+          <h2>Binary Versions</h2>
+          <p className="setting-description">
+            Installed versions of yt-dlp and ffmpeg tools
+          </p>
+          {versions ? (
+            <div className="versions-list">
+              <div className="version-item">
+                <span className="version-label">yt-dlp:</span>
+                <span className="version-value">{versions.ytdlp}</span>
+              </div>
+              <div className="version-item">
+                <span className="version-label">ffmpeg:</span>
+                <span className="version-value">{versions.ffmpeg}</span>
+              </div>
+              <div className="version-item">
+                <span className="version-label">ffprobe:</span>
+                <span className="version-value">{versions.ffprobe}</span>
+              </div>
+              <div className="version-item">
+                <span className="version-label">Last checked:</span>
+                <span className="version-value">
+                  {new Date(versions.lastChecked).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p>Loading versions...</p>
+          )}
+          <button 
+            onClick={handleCheckUpdates} 
+            className="secondary-btn"
+            disabled={checkingUpdates}
+          >
+            {checkingUpdates ? 'Checking...' : 'Check for Updates'}
+          </button>
         </div>
 
         <div className="setting-group">
