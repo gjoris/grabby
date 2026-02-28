@@ -48,6 +48,22 @@ function Settings({ onBack }: SettingsProps) {
     }
   };
 
+  const handleRedownloadBinaries = async () => {
+    const confirmed = confirm(
+      'This will delete and re-download all binaries (yt-dlp, ffmpeg, ffprobe).\n\n' +
+      'The application will restart after the download.\n\n' +
+      'Continue?'
+    );
+    
+    if (confirmed) {
+      try {
+        await ElectronAPIService.redownloadBinaries();
+      } catch (error) {
+        alert('Failed to redownload binaries: ' + error);
+      }
+    }
+  };
+
   return (
     <div className="settings-view">
       <div className="settings-header">
@@ -61,7 +77,7 @@ function Settings({ onBack }: SettingsProps) {
         <div className="setting-group">
           <h2>Download Location</h2>
           <p className="setting-description">
-            Choose where your downloaded files will be saved
+            Set the default location where your downloaded files will be saved. You can change this per download in the main screen.
           </p>
           <div className="folder-selector">
             <input 
@@ -106,8 +122,15 @@ function Settings({ onBack }: SettingsProps) {
             onClick={handleCheckUpdates} 
             className="secondary-btn"
             disabled={checkingUpdates}
+            style={{ marginRight: '0.5rem' }}
           >
             {checkingUpdates ? 'Checking...' : 'Check for Updates'}
+          </button>
+          <button 
+            onClick={handleRedownloadBinaries} 
+            className="danger-btn"
+          >
+            Redownload Binaries
           </button>
         </div>
 

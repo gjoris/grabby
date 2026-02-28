@@ -23,6 +23,7 @@ declare global {
       openLogsDirectory: () => Promise<void>;
       getBinaryVersions: () => Promise<any>;
       checkForUpdates: () => Promise<any>;
+      redownloadBinaries: () => Promise<boolean>;
     };
   }
 }
@@ -106,5 +107,9 @@ export class ElectronAPIService {
 
   static async checkForUpdates(): Promise<any> {
     return window.electronAPI.checkForUpdates();
+  }
+
+  static async redownloadBinaries(): Promise<boolean> {
+    return window.electronAPI.redownloadBinaries();
   }
 }
