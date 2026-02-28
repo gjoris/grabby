@@ -38,5 +38,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('binaries-ready', () => callback());
   },
   getLogsDirectory: () => ipcRenderer.invoke('get-logs-directory'),
-  openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory')
+  openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
+  getBinaryVersions: () => ipcRenderer.invoke('get-binary-versions'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates')
 });

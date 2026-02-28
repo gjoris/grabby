@@ -5,6 +5,7 @@ import { spawn } from 'child_process';
 import { checkAndDownloadBinaries, getBinaryPath } from './binaryManager';
 import { LogService } from './services/logService';
 import { DownloadParser } from './services/downloadParser';
+import { VersionManager } from './services/versionManager';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -62,8 +63,9 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  // Initialize logging service
+  // Initialize services
   LogService.initialize();
+  VersionManager.initialize();
   
   createWindow();
   
@@ -77,6 +79,17 @@ app.whenReady().then(async () => {
   }
   
   mainWindow?.webContents.send('binaries-ready');
+  
+  // Check for updates in the background
+  setTimeout(async () => {
+    const updateCheck = await VersionManager.checkForUpdates();
+    if (updateCheck.hasUpdates && updateCheck.ytdlpUpdate) {
+      mainWindow?.webContents.send('update-available', {
+        binary: 'yt-dlp',
+        version: updateCheck.ytdlpUpdate
+      });
+    }
+  }, 5000); // Check 5 seconds after startup
 });
 
 app.on('window-all-closed', () => {
@@ -308,4 +321,14 @@ ipcMain.handle('open-logs-directory', async () => {
   const { shell } = require('electron');
   const logsDir = LogService.getLogDirectory();
   shell.openPath(logsDir);
+});
+
+// Get binary versions
+ipcMain.handle('get-binary-versions', async () => {
+  return VersionManager.getInstalledVersions();
+});
+
+// Check for updates
+ipcMain.handle('check-for-updates', async () => {
+  return VersionManager.checkForUpdates();
 });
