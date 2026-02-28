@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
-import { checkAndDownloadBinaries, getBinaryPath } from './binaryManager';
+import { checkAndDownloadBinaries, getBinaryPath, redownloadAllBinaries } from './binaryManager';
 import { LogService } from './services/logService';
 import { DownloadParser } from './services/downloadParser';
 import { VersionManager } from './services/versionManager';
@@ -340,4 +340,19 @@ ipcMain.handle('get-binary-versions', async () => {
 // Check for updates
 ipcMain.handle('check-for-updates', async () => {
   return VersionManager.checkForUpdates();
+});
+
+// Redownload binaries
+ipcMain.handle('redownload-binaries', async () => {
+  const success = await redownloadAllBinaries((binary, progress, status) => {
+    mainWindow?.webContents.send('binary-download-progress', { binary, progress, status });
+  });
+  
+  if (success) {
+    // Restart the app
+    app.relaunch();
+    app.exit(0);
+  }
+  
+  return success;
 });
