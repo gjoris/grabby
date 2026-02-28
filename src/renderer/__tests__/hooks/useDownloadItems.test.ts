@@ -257,7 +257,7 @@ describe('useDownloadItems', () => {
     expect(result.current.items[1].progress).toBe(50);
   });
 
-  it('ignores updates for invalid indices', () => {
+  it('creates items automatically if updates are received for non-existent indices', () => {
     const { result } = renderHook(() => useDownloadItems());
     
     const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
@@ -267,13 +267,40 @@ describe('useDownloadItems', () => {
       startCallback({ index: 1, total: 2 });
     });
     
-    // Try to update non-existent item at index 5
+    // Update non-existent item at index 4
     act(() => {
-      titleCallback({ index: 5, title: 'Should not update' });
+      titleCallback({ index: 4, title: 'Auto Created' });
     });
     
-    expect(result.current.items[0].title).toBe('Item 1');
-    expect(result.current.items).toHaveLength(2);
+    expect(result.current.items).toHaveLength(4);
+    expect(result.current.items[3].title).toBe('Auto Created');
+    expect(result.current.items[3].status).toBe('downloading');
+  });
+
+  it('handles single video downloads where index might be missing or 0', () => {
+    const { result } = renderHook(() => useDownloadItems());
+    
+    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
+    
+    // Test missing index
+    act(() => {
+      titleCallback({ title: 'Single Video 1' });
+    });
+    
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].title).toBe('Single Video 1');
+    
+    // Reset and test index 0
+    act(() => {
+      result.current.reset();
+    });
+    
+    act(() => {
+      titleCallback({ index: 0, title: 'Single Video 2' });
+    });
+    
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].title).toBe('Single Video 2');
   });
 
   it('handles download complete event', () => {

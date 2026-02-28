@@ -138,6 +138,22 @@ app.whenReady().then(async () => {
   LogService.appLog('Binaries ready', 'info');
   mainWindow?.webContents.send('binaries-ready');
   
+  // Log binary versions to file
+  const versions = await VersionManager.getInstalledVersions();
+  if (versions) {
+    LogService.appLog(`Installed versions: yt-dlp ${versions.ytdlp}, ffmpeg ${versions.ffmpeg}`, 'info');
+  }
+
+  // Test if --concurrent-items is supported
+  const ytdlpPath = getBinaryPath('yt-dlp');
+  const check = spawn(ytdlpPath, ['--help']);
+  let helpOutput = '';
+  check.stdout.on('data', (data) => helpOutput += data.toString());
+  check.on('close', () => {
+    const supported = helpOutput.includes('--concurrent-items');
+    LogService.appLog(`Support for --concurrent-items: ${supported}`, 'info');
+  });
+  
   // Check for updates in the background
   setTimeout(async () => {
     LogService.appLog('Checking for updates...', 'info');
@@ -167,148 +183,143 @@ app.on('activate', () => {
 });
 
 // IPC handler for downloading
-ipcMain.handle('download', async (event, url: string, options: any) => {
+ipcMain.handle('download', async (event, url: string, options: any, jobId: string) => {
+  const ytdlpPath = getBinaryPath('yt-dlp');
+  const ffmpegPath = getBinaryPath('ffmpeg');
+  const binaryDir = path.dirname(ffmpegPath);
+  
+  const logFile = LogService.startDownloadLog();
+  LogService.log(`Download task started [Job: ${jobId}] for: ${url}`);
+
+  const MAX_CONCURRENT = 3;
+  let activeProcesses = 0;
+  let finishedItems = 0;
+  let totalDiscovered = 0;
+  let metadataFinished = false;
+  const queue: any[] = [];
+  const allEntries: any[] = [];
+
   return new Promise((resolve, reject) => {
-    const ytdlpPath = getBinaryPath('yt-dlp');
-    const ffmpegPath = getBinaryPath('ffmpeg');
-    const ffprobePath = getBinaryPath('ffprobe');
-    
-    // Start logging
-    const logFile = LogService.startDownloadLog();
-    LogService.log(`Download started for URL: ${url}`);
-    LogService.log(`Options: ${JSON.stringify(options, null, 2)}`);
-    LogService.log(`ffmpeg path: ${ffmpegPath}`);
-    LogService.log(`ffprobe path: ${ffprobePath}`);
-    
-    // Verify binaries exist
-    if (!fs.existsSync(ffmpegPath)) {
-      const error = `ffmpeg not found at: ${ffmpegPath}`;
-      LogService.log(error, 'error');
-      reject(new Error(error));
-      return;
-    }
-    if (!fs.existsSync(ffprobePath)) {
-      const error = `ffprobe not found at: ${ffprobePath}`;
-      LogService.log(error, 'error');
-      reject(new Error(error));
-      return;
-    }
-    
-    const args = [
-      url,
-      '--ffmpeg-location', ffmpegPath,
-      '--progress',
-      '--newline',
-      '--yes-playlist',  // Enable playlist downloads
-      '--no-warnings'    // Suppress warnings to reduce noise
-    ];
+    const runNext = () => {
+      // Resolve only if metadata fetch is done AND all discovered items are finished
+      if (metadataFinished && finishedItems === totalDiscovered && totalDiscovered > 0) {
+        event.sender.send('download-complete', { jobId });
+        LogService.endDownloadLog(true);
+        resolve({ success: true, logFile });
+        return;
+      }
 
-    if (options.format) {
-      args.push('-f', options.format);
-    }
-    if (options.extractAudio) {
-      args.push('-x');  // Extract audio
-    }
-    if (options.audioFormat) {
-      args.push('--audio-format', options.audioFormat);
-    }
-    if (options.output) {
-      args.push('-o', options.output);
-    }
+      while (activeProcesses < MAX_CONCURRENT && queue.length > 0) {
+        const entry = queue.shift();
+        const entryIndex = allEntries.indexOf(entry) + 1;
+        activeProcesses++;
 
-    LogService.log(`Executing: ${ytdlpPath} ${args.join(' ')}`);
-
-    const ytdlp = spawn(ytdlpPath, args);
-    
-    let lastLine = '';
-    let currentItemIndex = 0;
-    let currentItemTitle = '';
-    
-    ytdlp.stdout.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line.trim());
-      lines.forEach((line: string) => {
-        // Log everything to file
-        LogService.log(line, 'info');
-        
-        // Parse and send only relevant progress to UI
-        const parsed = DownloadParser.parse(line);
-        if (parsed) {
-          if (parsed.type === 'playlist') {
-            event.sender.send('download-playlist-info', parsed.data);
-          } else if (parsed.type === 'item') {
-            if (parsed.data.current) {
-              currentItemIndex = parsed.data.current;
-              event.sender.send('download-item-start', {
-                index: parsed.data.current,
-                total: parsed.data.total
-              });
-            } else if (parsed.data.title) {
-              currentItemTitle = parsed.data.title;
-              event.sender.send('download-item-title', {
-                index: currentItemIndex,
-                title: parsed.data.title
-              });
-            }
-          } else if (parsed.type === 'download') {
-            event.sender.send('download-progress-update', {
-              index: currentItemIndex,
-              progress: parsed.data.progress,
-              size: parsed.data.size
-            });
-          } else if (parsed.type === 'destination') {
-            // Update title with final filename
-            event.sender.send('download-item-title', {
-              index: currentItemIndex,
-              title: parsed.data.fileName
-            });
-            event.sender.send('download-item-processing', {
-              index: currentItemIndex
-            });
-          } else if (parsed.type === 'processing') {
-            event.sender.send('download-item-processing', {
-              index: currentItemIndex
-            });
-          } else if (parsed.type === 'complete') {
-            event.sender.send('download-item-complete', {
-              index: currentItemIndex
-            });
-          } else if (parsed.type === 'error') {
-            event.sender.send('download-item-error', {
-              index: currentItemIndex,
-              error: parsed.data.message
-            });
-          }
+        let entryUrl = entry.url || entry.webpage_url || entry.id;
+        if (entryUrl && !entryUrl.startsWith('http') && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+          entryUrl = `https://www.youtube.com/watch?v=${entryUrl}`;
         }
+        
+        if (!entryUrl) {
+          activeProcesses--;
+          finishedItems++;
+          runNext();
+          continue;
+        }
+
+        const entryArgs = [
+          entryUrl,
+          '--ffmpeg-location', binaryDir,
+          '--progress', '--newline', '--no-warnings', '--no-playlist',
+          '--concurrent-fragments', '5'
+        ];
+
+        if (options.format) entryArgs.push('-f', options.format);
+        if (options.extractAudio) entryArgs.push('-x');
+        if (options.audioFormat) entryArgs.push('--audio-format', options.audioFormat);
+        if (options.mergeOutputFormat) entryArgs.push('--merge-output-format', options.mergeOutputFormat);
+        if (options.output) entryArgs.push('-o', options.output);
+
+        const child = spawn(ytdlpPath, entryArgs);
+        
+        event.sender.send('download-item-start', { jobId, index: entryIndex, total: totalDiscovered || 1 });
+        if (entry.title) {
+          event.sender.send('download-item-title', { jobId, index: entryIndex, title: entry.title });
+        }
+
+        child.stdout.on('data', (data) => {
+          data.toString().split('\n').filter((l: string) => l.trim()).forEach((line: string) => {
+            LogService.log(line, 'info');
+            const parsed = DownloadParser.parse(line);
+            if (parsed) {
+              if (parsed.type === 'download') {
+                event.sender.send('download-progress-update', {
+                  jobId, index: entryIndex, progress: parsed.data.progress,
+                  size: parsed.data.size, speed: parsed.data.speed, eta: parsed.data.eta
+                });
+              } else if (parsed.type === 'destination' || parsed.type === 'processing') {
+                if (parsed.data?.fileName) {
+                  event.sender.send('download-item-title', { jobId, index: entryIndex, title: parsed.data.fileName });
+                }
+                event.sender.send('download-item-processing', { jobId, index: entryIndex });
+              }
+            }
+          });
+        });
+
+        child.on('close', (code) => {
+          activeProcesses--;
+          finishedItems++;
+          if (code === 0) {
+            event.sender.send('download-item-complete', { jobId, index: entryIndex });
+          } else {
+            event.sender.send('download-item-error', { jobId, index: entryIndex, error: `Exit code ${code}` });
+          }
+          runNext();
+        });
+      }
+    };
+
+    // Start metadata discovery process
+    LogService.log(`Discovering metadata...`);
+    const infoProcess = spawn(ytdlpPath, [url, '--dump-json', '--flat-playlist', '--no-warnings']);
+    
+    let buffer = '';
+    infoProcess.stdout.on('data', (data) => {
+      buffer += data.toString();
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep partial line in buffer
+
+      lines.filter(l => l.trim()).forEach(line => {
+        LogService.log(line, 'info');
+        try {
+          const entry = JSON.parse(line);
+          if (entry._type === 'playlist') {
+            event.sender.send('download-playlist-info', { jobId, name: entry.title || 'Playlist' });
+          } else {
+            totalDiscovered++;
+            queue.push(entry);
+            allEntries.push(entry);
+            // Notify UI about the total changing
+            event.sender.send('download-item-start', { jobId, index: allEntries.length, total: totalDiscovered });
+            runNext();
+          }
+        } catch (e) { /* ignore parse errors for partial lines */ }
       });
     });
 
-    ytdlp.stderr.on('data', (data) => {
-      const text = data.toString();
-      // Log all stderr to file
-      LogService.log(text, 'error');
-      
-      // Only send actual errors to UI
-      if (text.includes('ERROR:')) {
-        const parsed = DownloadParser.parse(text);
-        if (parsed && parsed.type === 'error') {
-          event.sender.send('download-item-error', {
-            index: currentItemIndex,
-            error: parsed.data.message
-          });
-        }
+    infoProcess.on('close', () => {
+      metadataFinished = true;
+      LogService.log(`Metadata discovery finished. Total: ${totalDiscovered}`);
+      if (totalDiscovered === 0) {
+        // Fallback for single videos where metadata might not follow the playlist pattern
+        reject(new Error('No videos found at this URL'));
       }
+      runNext();
     });
 
-    ytdlp.on('close', (code) => {
-      LogService.log(`Process exited with code: ${code}`);
-      LogService.endDownloadLog(code === 0);
-      
-      if (code === 0) {
-        event.sender.send('download-complete');
-        resolve({ success: true, logFile });
-      } else {
-        reject(new Error(`yt-dlp exited with code ${code}`));
-      }
+    infoProcess.on('error', (err) => {
+      LogService.log(`Metadata process error: ${err}`, 'error');
+      reject(err);
     });
   });
 });
