@@ -1,5 +1,5 @@
 export interface ParsedProgress {
-  type: 'playlist' | 'item' | 'download' | 'processing' | 'complete' | 'error';
+  type: 'playlist' | 'item' | 'download' | 'processing' | 'complete' | 'error' | 'destination';
   data: any;
 }
 
@@ -46,7 +46,7 @@ export class DownloadParser {
     }
 
     // File download path (e.g., "[download] /path/to/file.webm")
-    if (line.includes('[download]') && (line.includes('.webm') || line.includes('.mp4') || line.includes('.mp3'))) {
+    if (line.includes('[download]') && (line.includes('.webm') || line.includes('.mp4') || line.includes('.m4a'))) {
       const pathMatch = line.match(/\[download\]\s+(.+)/);
       const fullPath = pathMatch?.[1] || '';
       const fileName = fullPath.split('/').pop()?.replace(/\.(webm|mp4|m4a)$/, '') || 'Unknown';
@@ -57,19 +57,65 @@ export class DownloadParser {
       };
     }
 
-    // Processing (e.g., "[ExtractAudio] Destination: file.mp3")
-    if (line.includes('ExtractAudio') || line.includes('Merger') || line.includes('Postprocessing')) {
+    // Processing - ExtractAudio with destination
+    if (line.includes('[ExtractAudio] Destination:')) {
+      const match = line.match(/\[ExtractAudio\] Destination: (.+)/);
+      const fullPath = match?.[1] || '';
+      const fileName = fullPath.split('/').pop() || 'Unknown';
+      
+      return {
+        type: 'destination',
+        data: { 
+          fileName: fileName,
+          stage: 'extracting'
+        }
+      };
+    }
+
+    // Processing - Merger with destination
+    if (line.includes('[Merger] Merging formats into')) {
+      const match = line.match(/\[Merger\] Merging formats into "(.+)"/);
+      const fullPath = match?.[1] || '';
+      const fileName = fullPath.split('/').pop() || 'Unknown';
+      
+      return {
+        type: 'destination',
+        data: { 
+          fileName: fileName,
+          stage: 'merging'
+        }
+      };
+    }
+
+    // Processing stages
+    if (line.includes('[ExtractAudio]') || line.includes('[Merger]') || line.includes('[Postprocessor]')) {
       return {
         type: 'processing',
         data: {}
       };
     }
 
-    // Completion
-    if (line.includes('Finished downloading playlist') || line.includes('has already been downloaded')) {
+    // Deleting original file - means conversion is complete
+    if (line.includes('Deleting original file')) {
       return {
         type: 'complete',
-        data: {}
+        data: { reason: 'cleanup' }
+      };
+    }
+
+    // Already downloaded
+    if (line.includes('has already been downloaded')) {
+      return {
+        type: 'complete',
+        data: { reason: 'already_downloaded' }
+      };
+    }
+
+    // Completion
+    if (line.includes('Finished downloading playlist')) {
+      return {
+        type: 'complete',
+        data: { reason: 'playlist_complete' }
       };
     }
 
