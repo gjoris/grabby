@@ -25,14 +25,18 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  const binariesReady = await checkAndDownloadBinaries();
+  createWindow();
+  
+  const binariesReady = await checkAndDownloadBinaries((binary, progress, status) => {
+    mainWindow?.webContents.send('binary-download-progress', { binary, progress, status });
+  });
   
   if (!binariesReady) {
     app.quit();
     return;
   }
   
-  createWindow();
+  mainWindow?.webContents.send('binaries-ready');
 });
 
 app.on('window-all-closed', () => {
@@ -119,4 +123,22 @@ ipcMain.handle('get-info', async (event, url: string) => {
       }
     });
   });
+});
+
+// Check if binaries are ready
+ipcMain.handle('check-binaries', async () => {
+  const ytdlpPath = getBinaryPath('yt-dlp');
+  const ffmpegPath = getBinaryPath('ffmpeg');
+  
+  const ytdlpExists = require('fs').existsSync(ytdlpPath);
+  const ffmpegExists = require('fs').existsSync(ffmpegPath);
+  
+  const missing = [];
+  if (!ytdlpExists) missing.push('yt-dlp');
+  if (!ffmpegExists) missing.push('ffmpeg');
+  
+  return {
+    ready: ytdlpExists && ffmpegExists,
+    missing
+  };
 });
