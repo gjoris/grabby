@@ -5,6 +5,21 @@ export interface ParsedProgress {
 
 export class DownloadParser {
   static parse(line: string): ParsedProgress | null {
+    // Already downloaded
+    if (line.includes('has already been downloaded')) {
+      const match = line.match(/\[download\]\s+(.+)\s+has already been downloaded/);
+      const fullPath = match?.[1] || '';
+      const fileName = fullPath.split(/[/\\]/).pop()?.replace(/\.(webm|mp4|m4a|mkv|mp3|flv)$/, '') || 'Unknown';
+
+      return {
+        type: 'complete',
+        data: { 
+          reason: 'already_downloaded',
+          title: fileName 
+        }
+      };
+    }
+
     // Playlist detection
     if (line.includes('Downloading playlist:')) {
       const match = line.match(/Downloading playlist: (.+)/);
@@ -31,25 +46,32 @@ export class DownloadParser {
       return null; // Skip these, we'll get title from filename
     }
 
-    // Download progress (e.g., "[download] 45.2% of 5.23MiB")
+    // Download progress (e.g., "[download] 45.2% of 5.23MiB at 1.2MiB/s ETA 00:05")
+    // Or parallel: "[download] [001]  45.2% of 5.23MiB ..."
     if (line.includes('[download]') && line.includes('%')) {
+      const indexMatch = line.match(/\[download\]\s+\[(\d+)\]/);
       const percentMatch = line.match(/(\d+\.?\d*)%/);
       const sizeMatch = line.match(/of\s+([0-9.]+\s*[KMG]iB)/);
+      const speedMatch = line.match(/at\s+([0-9.]+\s*[KMG]iB\/s)/);
+      const etaMatch = line.match(/ETA\s+([\d:]+)/);
       
       return {
         type: 'download',
         data: {
+          index: indexMatch ? parseInt(indexMatch[1]) : undefined,
           progress: parseFloat(percentMatch?.[1] || '0'),
-          size: sizeMatch?.[1] || ''
+          size: sizeMatch?.[1] || '',
+          speed: speedMatch?.[1] || '',
+          eta: etaMatch?.[1] || ''
         }
       };
     }
 
-    // File download path (e.g., "[download] /path/to/file.webm")
-    if (line.includes('[download]') && (line.includes('.webm') || line.includes('.mp4') || line.includes('.m4a'))) {
-      const pathMatch = line.match(/\[download\]\s+(.+)/);
+    // File download path (e.g., "[download] Destination: /path/to/file.webm")
+    if (line.includes('[download]') && (line.includes('Destination:') || line.includes('.webm') || line.includes('.mp4') || line.includes('.m4a') || line.includes('.mkv') || line.includes('.mp3') || line.includes('.flv'))) {
+      const pathMatch = line.match(/\[download\]\s+(?:Destination:\s+)?(.+)/);
       const fullPath = pathMatch?.[1] || '';
-      const fileName = fullPath.split('/').pop()?.replace(/\.(webm|mp4|m4a)$/, '') || 'Unknown';
+      const fileName = fullPath.split(/[/\\]/).pop()?.replace(/\.(webm|mp4|m4a|mkv|mp3|flv)$/, '') || 'Unknown';
       
       return {
         type: 'item',
