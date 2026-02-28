@@ -23,8 +23,11 @@ export class LogService {
     const logFileName = `download-${timestamp}.log`;
     this.currentLogFile = path.join(this.logDir, logFileName);
     
-    const header = `=== Download started at ${new Date().toISOString()} ===\n`;
-    fs.writeFileSync(this.currentLogFile, header);
+    const header = this.formatLogLine('INFO', '='.repeat(80));
+    const startLine = this.formatLogLine('INFO', `Download session started`);
+    const separator = this.formatLogLine('INFO', '='.repeat(80));
+    
+    fs.writeFileSync(this.currentLogFile, `${header}${startLine}${separator}`);
     
     return this.currentLogFile;
   }
@@ -34,11 +37,15 @@ export class LogService {
       this.startDownloadLog();
     }
 
-    const timestamp = new Date().toISOString();
-    const logLine = `[${timestamp}] [${type.toUpperCase()}] ${message}\n`;
+    // Split multi-line messages and format each line
+    const lines = message.split('\n');
+    const formattedLines = lines
+      .filter(line => line.trim())
+      .map(line => this.formatLogLine(type.toUpperCase(), line))
+      .join('');
     
     try {
-      fs.appendFileSync(this.currentLogFile!, logLine);
+      fs.appendFileSync(this.currentLogFile!, formattedLines);
     } catch (error) {
       console.error('Failed to write to log file:', error);
     }
@@ -47,10 +54,19 @@ export class LogService {
   static endDownloadLog(success: boolean): void {
     if (!this.currentLogFile) return;
 
-    const footer = `\n=== Download ${success ? 'completed' : 'failed'} at ${new Date().toISOString()} ===\n`;
-    fs.appendFileSync(this.currentLogFile, footer);
+    const separator = this.formatLogLine('INFO', '='.repeat(80));
+    const endLine = this.formatLogLine('INFO', `Download session ${success ? 'completed successfully' : 'failed'}`);
+    const footer = this.formatLogLine('INFO', '='.repeat(80));
+    
+    fs.appendFileSync(this.currentLogFile, `${separator}${endLine}${footer}\n`);
     
     this.currentLogFile = null;
+  }
+
+  private static formatLogLine(level: string, message: string): string {
+    const timestamp = new Date().toISOString();
+    const paddedLevel = level.padEnd(5, ' ');
+    return `${timestamp} [${paddedLevel}] ${message}\n`;
   }
 
   static getLogDirectory(): string {
