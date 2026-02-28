@@ -5,8 +5,13 @@ interface HeaderProps {
 function Header({ onSettingsClick }: HeaderProps) {
   return (
     <header>
-      <h1>🎯 Grabby</h1>
-      <p>Download videos with ease</p>
+      <div className="header-title">
+        <img src="/icon.png" alt="Grabby" className="app-icon" />
+        <div>
+          <h1>Grabby</h1>
+          <p>Download from YouTube with ease</p>
+        </div>
+      </div>
       <button 
         className="settings-btn"
         onClick={onSettingsClick}

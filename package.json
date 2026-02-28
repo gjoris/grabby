@@ -57,6 +57,7 @@
       }
     ],
     "mac": {
+      "icon": "resources/icon.png",
       "category": "public.app-category.utilities",
       "target": [
         "dmg",
@@ -64,12 +65,14 @@
       ]
     },
     "win": {
+      "icon": "resources/icon.png",
       "target": [
         "nsis",
         "portable"
       ]
     },
     "linux": {
+      "icon": "resources/icon.png",
       "target": [
         "AppImage",
         "tar.gz"

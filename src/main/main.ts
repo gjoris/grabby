@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
@@ -56,9 +56,14 @@ function saveSettings(settings: Settings): void {
 }
 
 function createWindow() {
+  const iconPath = process.env.NODE_ENV === 'development'
+    ? path.join(__dirname, '../../resources/icon.png')
+    : path.join(__dirname, '../resources/icon.png');
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -79,27 +84,54 @@ app.whenReady().then(async () => {
   LogService.initialize();
   VersionManager.initialize();
   
+  LogService.appLog('Application ready, initializing...', 'info');
+  LogService.appLog(`Platform: ${process.platform}`, 'info');
+  LogService.appLog(`Electron version: ${process.versions.electron}`, 'info');
+  LogService.appLog(`Node version: ${process.versions.node}`, 'info');
+  
+  // Set dock icon on macOS
+  if (process.platform === 'darwin') {
+    const iconPath = process.env.NODE_ENV === 'development'
+      ? path.join(__dirname, '../../resources/icon.png')
+      : path.join(__dirname, '../resources/icon.png');
+    
+    if (fs.existsSync(iconPath)) {
+      const image = nativeImage.createFromPath(iconPath);
+      app.dock?.setIcon(image);
+      LogService.appLog('Dock icon set successfully', 'info');
+    } else {
+      LogService.appLog(`Icon not found at: ${iconPath}`, 'warn');
+    }
+  }
+  
   createWindow();
   
+  LogService.appLog('Checking binaries...', 'info');
   const binariesReady = await checkAndDownloadBinaries((binary, progress, status) => {
     mainWindow?.webContents.send('binary-download-progress', { binary, progress, status });
   });
   
   if (!binariesReady) {
+    LogService.appLog('Binary check failed, quitting application', 'error');
     app.quit();
     return;
   }
   
+  LogService.appLog('Binaries ready', 'info');
   mainWindow?.webContents.send('binaries-ready');
   
   // Check for updates in the background
   setTimeout(async () => {
+    LogService.appLog('Checking for updates...', 'info');
     const updateCheck = await VersionManager.checkForUpdates();
     if (updateCheck.hasUpdates && updateCheck.ytdlpUpdate) {
+      LogService.appLog(`Update available: yt-dlp ${updateCheck.ytdlpUpdate}`, 'info');
       mainWindow?.webContents.send('update-available', {
         binary: 'yt-dlp',
         version: updateCheck.ytdlpUpdate
       });
+    } else {
+      LogService.appLog('No updates available', 'info');
     }
   }, 5000); // Check 5 seconds after startup
 });
@@ -344,9 +376,42 @@ ipcMain.handle('open-logs-directory', async () => {
   shell.openPath(logsDir);
 });
 
+// Get log statistics
+ipcMain.handle('get-log-stats', async () => {
+  return LogService.getLogStats();
+});
+
+// Clear all logs
+ipcMain.handle('clear-logs', async () => {
+  return LogService.clearAllLogs();
+});
+
 // Get binary versions
 ipcMain.handle('get-binary-versions', async () => {
-  return VersionManager.getInstalledVersions();
+  const versions = VersionManager.getInstalledVersions();
+  
+  // If versions don't exist or are 'unknown', try to get them from binaries
+  if (!versions || versions.ytdlp === 'unknown' || versions.ffmpeg === 'unknown') {
+    const ytdlpPath = getBinaryPath('yt-dlp');
+    const ffmpegPath = getBinaryPath('ffmpeg');
+    const ffprobePath = getBinaryPath('ffprobe');
+    
+    const ytdlpVersion = await VersionManager.getBinaryVersion(ytdlpPath, 'yt-dlp');
+    const ffmpegVersion = await VersionManager.getBinaryVersion(ffmpegPath, 'ffmpeg');
+    const ffprobeVersion = await VersionManager.getBinaryVersion(ffprobePath, 'ffprobe');
+    
+    const newVersions = {
+      ytdlp: ytdlpVersion,
+      ffmpeg: ffmpegVersion,
+      ffprobe: ffprobeVersion,
+      lastChecked: new Date().toISOString()
+    };
+    
+    VersionManager.saveVersions(newVersions);
+    return newVersions;
+  }
+  
+  return versions;
 });
 
 // Check for updates
@@ -361,9 +426,7 @@ ipcMain.handle('redownload-binaries', async () => {
   });
   
   if (success) {
-    // Restart the app
-    app.relaunch();
-    app.exit(0);
+    mainWindow?.webContents.send('binaries-ready');
   }
   
   return success;
