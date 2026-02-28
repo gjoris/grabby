@@ -201,3 +201,40 @@ export async function checkAndDownloadBinaries(
     return false;
   }
 }
+
+export async function redownloadAllBinaries(
+  onProgress?: (binary: string, progress: number, status: string) => void
+): Promise<boolean> {
+  const platform = process.platform as 'darwin' | 'win32' | 'linux';
+  
+  // Delete existing binaries
+  const ytdlpPath = getBinaryPath('yt-dlp');
+  const ffmpegPath = getBinaryPath('ffmpeg');
+  const ffprobePath = getBinaryPath('ffprobe');
+  
+  try {
+    if (fs.existsSync(ytdlpPath)) fs.unlinkSync(ytdlpPath);
+    if (fs.existsSync(ffmpegPath)) fs.unlinkSync(ffmpegPath);
+    if (fs.existsSync(ffprobePath)) fs.unlinkSync(ffprobePath);
+  } catch (error) {
+    console.error('Failed to delete binaries:', error);
+  }
+  
+  // Download all binaries
+  try {
+    await downloadBinary('ytdlp', platform, (progress, status) => {
+      onProgress?.('yt-dlp', progress, status);
+    });
+    await downloadBinary('ffmpeg', platform, (progress, status) => {
+      onProgress?.('ffmpeg', progress, status);
+    });
+    await downloadBinary('ffprobe', platform, (progress, status) => {
+      onProgress?.('ffprobe', progress, status);
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to redownload binaries:', error);
+    return false;
+  }
+}
