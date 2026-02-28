@@ -2,6 +2,10 @@ import { app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 interface BinaryVersions {
   ytdlp: string;
@@ -40,6 +44,28 @@ export class VersionManager {
       fs.writeFileSync(this.versionsPath, JSON.stringify(versions, null, 2));
     } catch (error) {
       console.error('Failed to save versions:', error);
+    }
+  }
+
+  static async getBinaryVersion(binaryPath: string, binaryName: string): Promise<string> {
+    try {
+      const { stdout, stderr } = await execFileAsync(binaryPath, ['--version']);
+      const output = stdout || stderr;
+      
+      if (binaryName === 'yt-dlp') {
+        // yt-dlp outputs version like "2024.01.01"
+        const match = output.match(/(\d{4}\.\d{2}\.\d{2})/);
+        return match ? match[1] : 'unknown';
+      } else if (binaryName === 'ffmpeg' || binaryName === 'ffprobe') {
+        // ffmpeg outputs like "ffmpeg version N-113684-g1234abcd"
+        const match = output.match(/version\s+([^\s]+)/i);
+        return match ? match[1] : 'unknown';
+      }
+      
+      return 'unknown';
+    } catch (error) {
+      console.error(`Failed to get ${binaryName} version:`, error);
+      return 'unknown';
     }
   }
 
