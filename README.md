@@ -52,7 +52,12 @@ See the [CHANGELOG](CHANGELOG.md) for details about each release.
 #### macOS
 1. Download the `.dmg` file
 2. Open the file and drag Grabby to your Applications folder
-3. On first launch: right-click → Open (due to Gatekeeper)
+3. On first launch: You may see a security warning (Gatekeeper)
+   - Click "Open" in the dialog, or
+   - Right-click the app → Select "Open"
+   - After the first launch, no warning will appear again
+
+> **Note**: This app is self-signed by the developer (Geroen Joris). If you see a security warning, it's normal and expected. The app is safe to use.
 
 #### Linux
 1. Download the `.AppImage` file
