@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as https from 'https';
 import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
+import { VersionManager } from './services/versionManager';
 
 const DOWNLOAD_URLS = {
   darwin: {
@@ -122,6 +123,17 @@ async function downloadBinary(
       onProgress?.(progress, 'Downloading...');
     });
     onProgress?.(100, 'Complete');
+  }
+
+  // Record version for yt-dlp
+  if (name === 'ytdlp') {
+    const version = await VersionManager.getCurrentYtDlpVersion();
+    if (version) {
+      VersionManager.recordInstallation('ytdlp', version);
+    }
+  } else {
+    // For ffmpeg/ffprobe, record as installed
+    VersionManager.recordInstallation(name, 'latest');
   }
 }
 
