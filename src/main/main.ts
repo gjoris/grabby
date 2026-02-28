@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { checkAndDownloadBinaries, getBinaryPath } from './binaryManager';
 import { LogService } from './services/logService';
+import { DownloadParser } from './services/downloadParser';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -128,6 +129,8 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
     const ytdlp = spawn(ytdlpPath, args);
     
     let lastLine = '';
+    let currentItemIndex = 0;
+    let currentItemTitle = '';
     
     ytdlp.stdout.on('data', (data) => {
       const lines = data.toString().split('\n').filter((line: string) => line.trim());
@@ -135,10 +138,45 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
         // Log everything to file
         LogService.log(line, 'info');
         
-        // Only send if different from last line to avoid duplicates
-        if (line !== lastLine) {
-          event.sender.send('download-progress', line);
-          lastLine = line;
+        // Parse and send only relevant progress to UI
+        const parsed = DownloadParser.parse(line);
+        if (parsed) {
+          if (parsed.type === 'playlist') {
+            event.sender.send('download-playlist-info', parsed.data);
+          } else if (parsed.type === 'item') {
+            if (parsed.data.current) {
+              currentItemIndex = parsed.data.current;
+              event.sender.send('download-item-start', {
+                index: parsed.data.current,
+                total: parsed.data.total
+              });
+            } else if (parsed.data.title) {
+              currentItemTitle = parsed.data.title;
+              event.sender.send('download-item-title', {
+                index: currentItemIndex,
+                title: parsed.data.title
+              });
+            }
+          } else if (parsed.type === 'download') {
+            event.sender.send('download-progress-update', {
+              index: currentItemIndex,
+              progress: parsed.data.progress,
+              size: parsed.data.size
+            });
+          } else if (parsed.type === 'processing') {
+            event.sender.send('download-item-processing', {
+              index: currentItemIndex
+            });
+          } else if (parsed.type === 'complete') {
+            event.sender.send('download-item-complete', {
+              index: currentItemIndex
+            });
+          } else if (parsed.type === 'error') {
+            event.sender.send('download-item-error', {
+              index: currentItemIndex,
+              error: parsed.data.message
+            });
+          }
         }
       });
     });
@@ -148,9 +186,15 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
       // Log all stderr to file
       LogService.log(text, 'error');
       
-      // Only send actual errors, not warnings
+      // Only send actual errors to UI
       if (text.includes('ERROR:')) {
-        event.sender.send('download-error', text);
+        const parsed = DownloadParser.parse(text);
+        if (parsed && parsed.type === 'error') {
+          event.sender.send('download-item-error', {
+            index: currentItemIndex,
+            error: parsed.data.message
+          });
+        }
       }
     });
 
@@ -159,6 +203,7 @@ ipcMain.handle('download', async (event, url: string, options: any) => {
       LogService.endDownloadLog(code === 0);
       
       if (code === 0) {
+        event.sender.send('download-complete');
         resolve({ success: true, logFile });
       } else {
         reject(new Error(`yt-dlp exited with code ${code}`));
