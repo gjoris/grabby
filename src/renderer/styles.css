@@ -303,3 +303,114 @@ input[type="text"]:focus {
   background: #e0e0e0;
   border-color: #ccc;
 }
+
+.download-items {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.playlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.playlist-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.item-count {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.download-item {
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s;
+}
+
+.download-item.downloading {
+  border-color: #667eea;
+  background: #f0f3ff;
+}
+
+.download-item.processing {
+  border-color: #ffa500;
+  background: #fff8e6;
+}
+
+.download-item.completed {
+  border-color: #4caf50;
+  background: #f1f8f4;
+}
+
+.download-item.error {
+  border-color: #f44336;
+  background: #ffebee;
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.item-icon {
+  font-size: 1.2rem;
+}
+
+.item-title {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-status {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.item-progress-bar {
+  margin-top: 0.5rem;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.item-progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.item-error {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #ffcdd2;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #c62828;
+}
