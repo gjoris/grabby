@@ -27,9 +27,9 @@ export class LogService {
     const logFileName = `app-${date}.log`;
     this.appLogFile = path.join(this.logDir, logFileName);
     
-    // Get app version
-    const packageJson = require('../../../package.json');
-    const appVersion = packageJson.version;
+    // Get app version from Electron
+    const { app } = require('electron');
+    const appVersion = app.getVersion();
     
     // Only write header if file doesn't exist
     if (!fs.existsSync(this.appLogFile)) {

@@ -7,9 +7,8 @@ import { LogService } from './services/logService';
 import { DownloadParser } from './services/downloadParser';
 import { VersionManager } from './services/versionManager';
 
-// Get app version from package.json
-const packageJson = require('../../package.json');
-const APP_VERSION = packageJson.version;
+// Get app version from Electron
+const APP_VERSION = app.getVersion();
 
 let mainWindow: BrowserWindow | null = null;
 
