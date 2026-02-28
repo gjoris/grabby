@@ -95,12 +95,29 @@ app.on('activate', () => {
 ipcMain.handle('download', async (event, url: string, options: any) => {
   return new Promise((resolve, reject) => {
     const ytdlpPath = getBinaryPath('yt-dlp');
-    const ffmpegPath = path.dirname(getBinaryPath('ffmpeg'));
+    const ffmpegPath = getBinaryPath('ffmpeg');
+    const ffprobePath = getBinaryPath('ffprobe');
     
     // Start logging
     const logFile = LogService.startDownloadLog();
     LogService.log(`Download started for URL: ${url}`);
     LogService.log(`Options: ${JSON.stringify(options, null, 2)}`);
+    LogService.log(`ffmpeg path: ${ffmpegPath}`);
+    LogService.log(`ffprobe path: ${ffprobePath}`);
+    
+    // Verify binaries exist
+    if (!fs.existsSync(ffmpegPath)) {
+      const error = `ffmpeg not found at: ${ffmpegPath}`;
+      LogService.log(error, 'error');
+      reject(new Error(error));
+      return;
+    }
+    if (!fs.existsSync(ffprobePath)) {
+      const error = `ffprobe not found at: ${ffprobePath}`;
+      LogService.log(error, 'error');
+      reject(new Error(error));
+      return;
+    }
     
     const args = [
       url,
