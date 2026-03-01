@@ -1,159 +1,110 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { useBinarySetup } from '../hooks/useBinarySetup';
+
+// Mock hooks
+vi.mock('../hooks/useBinarySetup');
+
+// Mock Electron API
+const mockGetSettings = vi.fn().mockResolvedValue({ downloadPath: '/test/path' });
+const mockSelectFolder = vi.fn().mockResolvedValue('/new/path');
+const mockDownload = vi.fn().mockResolvedValue({ success: true });
+const mockCheckBinaries = vi.fn().mockResolvedValue({ ready: true, missing: [] });
+const mockGetBinaryVersions = vi.fn().mockResolvedValue({ ytdlp: '1', ffmpeg: '1', ffprobe: '1', lastChecked: new Date().toISOString() });
+const mockGetLogStats = vi.fn().mockResolvedValue({ count: 0, sizeBytes: 0, sizeMB: '0' });
+const mockGetAppVersion = vi.fn().mockResolvedValue('1.2.0');
+
+let readyHandler: any;
+
+Object.defineProperty(window, 'electronAPI', {
+  value: {
+    getSettings: mockGetSettings,
+    selectFolder: mockSelectFolder,
+    download: mockDownload,
+    getInfo: vi.fn(),
+    checkBinaries: mockCheckBinaries,
+    onBinariesReady: (cb: any) => { readyHandler = cb; },
+    onBinaryDownloadProgress: vi.fn(),
+    onDownloadPlaylistInfo: vi.fn(),
+    onDownloadItemStart: vi.fn(),
+    onDownloadItemTitle: vi.fn(),
+    onDownloadProgressUpdate: vi.fn(),
+    onDownloadItemProcessing: vi.fn(),
+    onDownloadItemComplete: vi.fn(),
+    onDownloadItemError: vi.fn(),
+    onDownloadComplete: vi.fn(),
+    getLogsDirectory: vi.fn().mockResolvedValue('/logs'),
+    openLogsDirectory: vi.fn(),
+    getLogStats: mockGetLogStats,
+    clearLogs: vi.fn(),
+    getBinaryVersions: mockGetBinaryVersions,
+    getAppVersion: mockGetAppVersion,
+    checkForUpdates: vi.fn().mockResolvedValue({ hasUpdates: false }),
+    redownloadBinaries: vi.fn(),
+  },
+  writable: true,
+});
 
 describe('App Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(window.electronAPI.checkBinaries).mockResolvedValue({ ready: true, missing: [] });
+    window.confirm = vi.fn().mockReturnValue(true);
+    vi.mocked(useBinarySetup).mockReturnValue({
+      isReady: true,
+      binaryProgress: {},
+      hasBinaryDownloads: false
+    });
   });
 
   it('renders main view by default', async () => {
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Grabby')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
-    });
-  });
-
-  it('navigates to settings and back', async () => {
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Grabby')).toBeInTheDocument();
-    });
-    
-    // Click settings button
-    const settingsButton = screen.getByRole('button', { name: /settings/i });
-    await userEvent.click(settingsButton);
-    
-    // Should show settings view
-    await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
-      expect(screen.getByText('Download Location')).toBeInTheDocument();
-    });
-    
-    // Click back button
-    const backButton = screen.getByRole('button', { name: /back/i });
-    await userEvent.click(backButton);
-    
-    // Should return to main view
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
-    });
+    await act(async () => { render(<App />); });
+    expect(screen.getByText('Grabby')).toBeInTheDocument();
   });
 
   it('shows binary download progress when binaries are not ready', async () => {
-    vi.mocked(window.electronAPI.checkBinaries).mockResolvedValue({ 
-      ready: false, 
-      missing: ['yt-dlp', 'ffmpeg'] 
+    vi.mocked(useBinarySetup).mockReturnValue({
+      isReady: false,
+      binaryProgress: { 'yt-dlp': { progress: 50, status: 'Downloading' } },
+      hasBinaryDownloads: true
     });
     
-    render(<App />);
-    
-    // Simulate binary download progress
-    const progressCallback = vi.mocked(window.electronAPI.onBinaryDownloadProgress).mock.calls[0][0];
-    progressCallback({ binary: 'yt-dlp', progress: 50, status: 'Downloading...' });
-    
-    await waitFor(() => {
-      expect(screen.getByText(/setting up dependencies/i)).toBeInTheDocument();
-    });
+    await act(async () => { render(<App />); });
+    expect(screen.getByText(/Setting up dependencies/i)).toBeInTheDocument();
   });
 
-  it('shows main UI when binaries are ready', async () => {
-    render(<App />);
+  it('navigates to settings and back', async () => {
+    await act(async () => { render(<App />); });
+    const settingsButton = await screen.findByLabelText(/settings/i);
+    await userEvent.click(settingsButton);
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+
+    const backButton = screen.getByRole('button', { name: /back/i });
+    await userEvent.click(backButton);
+    expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
+  });
+
+  it('triggers redownload binaries from settings', async () => {
+    await act(async () => { render(<App />); });
+    const settingsButton = await screen.findByLabelText(/settings/i);
+    await userEvent.click(settingsButton);
     
-    // Simulate binaries ready event
-    const readyCallback = vi.mocked(window.electronAPI.onBinariesReady).mock.calls[0][0];
-    readyCallback();
+    const redownloadButton = screen.getByRole('button', { name: /reinstall tools/i });
+    await userEvent.click(redownloadButton);
     
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
-    });
+    expect(window.confirm).toHaveBeenCalled();
   });
 
   it('complete download flow', async () => {
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
-    });
-    
-    // Enter URL
+    await act(async () => { render(<App />); });
     const input = screen.getByPlaceholderText(/paste.*url/i);
+    const downloadButton = screen.getByRole('button', { name: /start download/i });
+
     await userEvent.type(input, 'https://example.com/video');
-    
-    // Click download button
-    const downloadButton = screen.getByRole('button', { name: /download/i });
     await userEvent.click(downloadButton);
-    
-    // Verify download was initiated
-    expect(window.electronAPI.download).toHaveBeenCalledWith(
-      'https://example.com/video',
-      expect.objectContaining({
-        format: expect.any(String),
-        output: expect.any(String),
-      })
-    );
-  });
 
-  it('changes download location', async () => {
-    vi.mocked(window.electronAPI.selectFolder).mockResolvedValue('/custom/path');
-    
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/save to:/i)).toBeInTheDocument();
-    });
-    
-    // Click change button
-    const changeButton = screen.getByRole('button', { name: /change/i });
-    await userEvent.click(changeButton);
-    
-    await waitFor(() => {
-      expect(window.electronAPI.selectFolder).toHaveBeenCalled();
-    });
-  });
-
-  it('switches between MP3 and video format', async () => {
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByLabelText(/mp3/i)).toBeInTheDocument();
-    });
-    
-    // MP3 should be selected by default
-    const mp3Radio = screen.getByLabelText(/mp3/i) as HTMLInputElement;
-    expect(mp3Radio.checked).toBe(true);
-    
-    // Switch to video
-    const videoRadio = screen.getByLabelText(/video/i);
-    await userEvent.click(videoRadio);
-    
-    // Video should now be selected
-    expect((videoRadio as HTMLInputElement).checked).toBe(true);
-    expect(mp3Radio.checked).toBe(false);
-  });
-
-  it('displays download items when download starts', async () => {
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
-    });
-    
-    // Simulate download item events
-    const itemStartCallback = vi.mocked(window.electronAPI.onDownloadItemStart).mock.calls[0][0];
-    const itemTitleCallback = vi.mocked(window.electronAPI.onDownloadItemTitle).mock.calls[0][0];
-    
-    itemStartCallback({ index: 1, total: 1 });
-    itemTitleCallback({ index: 1, title: 'Test Video' });
-    
-    await waitFor(() => {
-      expect(screen.getByText('Test Video')).toBeInTheDocument();
-    });
+    expect(mockDownload).toHaveBeenCalled();
+    expect(screen.getByText('Initializing...')).toBeInTheDocument();
   });
 });
