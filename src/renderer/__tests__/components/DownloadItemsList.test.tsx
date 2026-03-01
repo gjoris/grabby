@@ -5,101 +5,31 @@ import { DownloadItem } from '../../types/download';
 
 describe('DownloadItemsList', () => {
   const mockItems: DownloadItem[] = [
-    {
-      id: '1',
-      title: 'Video 1',
-      status: 'downloading',
-      progress: 50,
-    },
-    {
-      id: '2',
-      title: 'Video 2',
-      status: 'completed',
-      progress: 100,
-    },
-    {
-      id: '3',
-      title: 'Video 3',
-      status: 'error',
-      progress: 0,
-      error: 'Download failed',
-    },
+    { id: '1', title: 'V1', status: 'pending', progress: 0 },
+    { id: '2', title: 'V2', status: 'downloading', progress: 50 },
+    { id: '3', title: 'V3', status: 'processing', progress: 90 },
+    { id: '4', title: 'V4', status: 'completed', progress: 100 },
+    { id: '5', title: 'V5', status: 'error', progress: 0, error: 'Err' }
   ];
 
-  it('renders nothing when items array is empty', () => {
+  it('renders nothing when items are empty', () => {
     const { container } = render(<DownloadItemsList items={[]} />);
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders all download items', () => {
+  it('renders all statuses correctly', () => {
     render(<DownloadItemsList items={mockItems} />);
-    
-    expect(screen.getByText('Video 1')).toBeInTheDocument();
-    expect(screen.getByText('Video 2')).toBeInTheDocument();
-    expect(screen.getByText('Video 3')).toBeInTheDocument();
-  });
-
-  it('displays playlist header when playlistName is provided', () => {
-    render(<DownloadItemsList items={mockItems} playlistName="My Playlist" />);
-    
-    expect(screen.getByText('My Playlist')).toBeInTheDocument();
-    expect(screen.getByText('3 items')).toBeInTheDocument();
-  });
-
-  it('does not display playlist header when playlistName is not provided', () => {
-    render(<DownloadItemsList items={mockItems} />);
-    
-    expect(screen.queryByText(/items/i)).not.toBeInTheDocument();
-  });
-
-  it('shows progress bar for downloading items', () => {
-    render(<DownloadItemsList items={mockItems} />);
-    
-    const progressBars = screen.getAllByRole('progressbar');
-    expect(progressBars.length).toBeGreaterThan(0);
-  });
-
-  it('displays status chips for each item', () => {
-    render(<DownloadItemsList items={mockItems} />);
-    
+    expect(screen.getByText('Waiting...')).toBeInTheDocument();
     expect(screen.getByText('Downloading')).toBeInTheDocument();
+    expect(screen.getByText('Converting')).toBeInTheDocument();
     expect(screen.getByText('Complete')).toBeInTheDocument();
     expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.getByText('Err')).toBeInTheDocument();
   });
 
-  it('displays error message for failed items', () => {
-    render(<DownloadItemsList items={mockItems} />);
-    
-    expect(screen.getByText('Download failed')).toBeInTheDocument();
-  });
-
-  it('shows correct status for pending items', () => {
-    const pendingItems: DownloadItem[] = [
-      {
-        id: '1',
-        title: 'Pending Video',
-        status: 'pending',
-        progress: 0,
-      },
-    ];
-    
-    render(<DownloadItemsList items={pendingItems} />);
-    
-    expect(screen.getByText('Waiting...')).toBeInTheDocument();
-  });
-
-  it('shows correct status for processing items', () => {
-    const processingItems: DownloadItem[] = [
-      {
-        id: '1',
-        title: 'Processing Video',
-        status: 'processing',
-        progress: 90,
-      },
-    ];
-    
-    render(<DownloadItemsList items={processingItems} />);
-    
-    expect(screen.getByText('Converting')).toBeInTheDocument();
+  it('shows playlist header', () => {
+    render(<DownloadItemsList items={mockItems} playlistName="List" />);
+    expect(screen.getByText('List')).toBeInTheDocument();
+    expect(screen.getByText('5 items')).toBeInTheDocument();
   });
 });

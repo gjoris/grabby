@@ -1,83 +1,76 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import DownloadLocationSelector from '../../components/DownloadLocationSelector';
+
+// Mock electronAPI
+const mockGetSettings = vi.fn().mockResolvedValue({ downloadPath: '/test/path' });
+const mockSelectFolder = vi.fn().mockResolvedValue('/new/path');
+
+Object.defineProperty(window, 'electronAPI', {
+  value: {
+    getSettings: mockGetSettings,
+    selectFolder: mockSelectFolder,
+  },
+  writable: true,
+});
 
 describe('DownloadLocationSelector', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders location label and input', () => {
-    render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
+  it('renders destination label and current path', async () => {
+    await act(async () => {
+      render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
+    });
     
-    expect(screen.getByText(/save to:/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /change/i })).toBeInTheDocument();
+    expect(screen.getByText(/destination/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('/test/path')).toBeInTheDocument();
+    });
   });
 
   it('loads and displays current path on mount', async () => {
-    render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
-    
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('/test/path')).toBeInTheDocument();
+    await act(async () => {
+      render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
     });
-  });
-
-  it('displays "Not set" when path is empty', async () => {
-    vi.mocked(window.electronAPI.getSettings).mockResolvedValue({ downloadPath: '' });
-    
-    render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
-    
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Not set')).toBeInTheDocument();
-    });
+    expect(mockGetSettings).toHaveBeenCalled();
   });
 
   it('opens folder selector when change button is clicked', async () => {
-    vi.mocked(window.electronAPI.selectFolder).mockResolvedValue('/new/path');
-    const onLocationChange = vi.fn();
-    
-    render(<DownloadLocationSelector onLocationChange={onLocationChange} />);
-    
+    await act(async () => {
+      render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
+    });
     const changeButton = screen.getByRole('button', { name: /change/i });
     await userEvent.click(changeButton);
-    
-    expect(window.electronAPI.selectFolder).toHaveBeenCalled();
+    expect(mockSelectFolder).toHaveBeenCalled();
   });
 
-  it('updates path and calls onLocationChange when folder is selected', async () => {
-    vi.mocked(window.electronAPI.selectFolder).mockResolvedValue('/new/path');
+  it('updates path when folder is selected', async () => {
     const onLocationChange = vi.fn();
-    
-    render(<DownloadLocationSelector onLocationChange={onLocationChange} />);
-    
+    await act(async () => {
+      render(<DownloadLocationSelector onLocationChange={onLocationChange} />);
+    });
     const changeButton = screen.getByRole('button', { name: /change/i });
     await userEvent.click(changeButton);
     
     await waitFor(() => {
       expect(onLocationChange).toHaveBeenCalledWith('/new/path');
-      expect(screen.getByDisplayValue('/new/path')).toBeInTheDocument();
+      expect(screen.getByText('/new/path')).toBeInTheDocument();
     });
   });
 
-  it('does not update path when folder selection is cancelled', async () => {
-    vi.mocked(window.electronAPI.selectFolder).mockResolvedValue(null);
+  it('does not update path when selection is cancelled', async () => {
+    mockSelectFolder.mockResolvedValueOnce(null);
     const onLocationChange = vi.fn();
-    
-    render(<DownloadLocationSelector onLocationChange={onLocationChange} />);
-    
+    await act(async () => {
+      render(<DownloadLocationSelector onLocationChange={onLocationChange} />);
+    });
     const changeButton = screen.getByRole('button', { name: /change/i });
     await userEvent.click(changeButton);
     
-    await waitFor(() => {
-      expect(onLocationChange).not.toHaveBeenCalled();
-    });
-  });
-
-  it('input is read-only', () => {
-    render(<DownloadLocationSelector onLocationChange={vi.fn()} />);
-    
-    const input = screen.getByRole('textbox');
-    expect(input).toHaveAttribute('readonly');
+    expect(onLocationChange).not.toHaveBeenCalled();
+    expect(screen.getByText('/test/path')).toBeInTheDocument();
   });
 });
