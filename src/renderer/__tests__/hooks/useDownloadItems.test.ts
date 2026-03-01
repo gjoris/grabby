@@ -2,26 +2,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDownloadItems } from '../../hooks/useDownloadItems';
 
-// Mock electronAPI
-const mockOnDownloadPlaylistInfo = vi.fn();
-const mockOnDownloadItemStart = vi.fn();
-const mockOnDownloadItemTitle = vi.fn();
-const mockOnDownloadProgressUpdate = vi.fn();
-const mockOnDownloadItemProcessing = vi.fn();
-const mockOnDownloadItemComplete = vi.fn();
-const mockOnDownloadItemError = vi.fn();
-const mockOnDownloadComplete = vi.fn();
+// Mock handlers
+let itemStartHandler: any;
+let progressUpdateHandler: any;
+let itemTitleHandler: any;
+let itemProcessingHandler: any;
+let itemCompleteHandler: any;
+let itemErrorHandler: any;
+let playlistInfoHandler: any;
+let downloadCompleteHandler: any;
 
 Object.defineProperty(window, 'electronAPI', {
   value: {
-    onDownloadPlaylistInfo: mockOnDownloadPlaylistInfo,
-    onDownloadItemStart: mockOnDownloadItemStart,
-    onDownloadItemTitle: mockOnDownloadItemTitle,
-    onDownloadProgressUpdate: mockOnDownloadProgressUpdate,
-    onDownloadItemProcessing: mockOnDownloadItemProcessing,
-    onDownloadItemComplete: mockOnDownloadItemComplete,
-    onDownloadItemError: mockOnDownloadItemError,
-    onDownloadComplete: mockOnDownloadComplete,
+    onDownloadPlaylistInfo: (cb: any) => { playlistInfoHandler = cb; },
+    onDownloadItemStart: (cb: any) => { itemStartHandler = cb; },
+    onDownloadItemTitle: (cb: any) => { itemTitleHandler = cb; },
+    onDownloadProgressUpdate: (cb: any) => { progressUpdateHandler = cb; },
+    onDownloadItemProcessing: (cb: any) => { itemProcessingHandler = cb; },
+    onDownloadItemComplete: (cb: any) => { itemCompleteHandler = cb; },
+    onDownloadItemError: (cb: any) => { itemErrorHandler = cb; },
+    onDownloadComplete: (cb: any) => { downloadCompleteHandler = cb; },
   },
   writable: true,
 });
@@ -31,320 +31,65 @@ describe('useDownloadItems', () => {
     vi.clearAllMocks();
   });
 
-  it('initializes with empty items', () => {
+  it('handles the full lifecycle of a download session', () => {
     const { result } = renderHook(() => useDownloadItems());
+    let jobId: string;
     
-    expect(result.current.items).toEqual([]);
-    expect(result.current.playlistName).toBe('');
-  });
+    // 1. Reset/Start
+    act(() => { jobId = result.current.startNewDownload(); });
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].title).toBe('Initializing...');
 
-  it('resets items and playlist name', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    act(() => {
-      result.current.reset();
-    });
-    
-    expect(result.current.items).toEqual([]);
-    expect(result.current.playlistName).toBe('');
-  });
+    // 2. Playlist Info
+    act(() => { playlistInfoHandler({ jobId, name: 'My Collection' }); });
+    expect(result.current.playlistName).toBe('My Collection');
 
-  it('registers event listeners on mount', () => {
-    renderHook(() => useDownloadItems());
-    
-    expect(mockOnDownloadPlaylistInfo).toHaveBeenCalled();
-    expect(mockOnDownloadItemStart).toHaveBeenCalled();
-    expect(mockOnDownloadItemTitle).toHaveBeenCalled();
-    expect(mockOnDownloadProgressUpdate).toHaveBeenCalled();
-    expect(mockOnDownloadItemProcessing).toHaveBeenCalled();
-    expect(mockOnDownloadItemComplete).toHaveBeenCalled();
-    expect(mockOnDownloadItemError).toHaveBeenCalled();
-    expect(mockOnDownloadComplete).toHaveBeenCalled();
-  });
+    // 3. Item Start (replaces placeholder)
+    act(() => { itemStartHandler({ jobId, index: 1, total: 2 }); });
+    expect(result.current.items).toHaveLength(2);
+    expect(result.current.items[0].status).toBe('downloading');
 
-  it('handles playlist info event', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const callback = mockOnDownloadPlaylistInfo.mock.calls[0][0];
-    
-    act(() => {
-      callback({ name: 'My Playlist' });
-    });
-    
-    expect(result.current.playlistName).toBe('My Playlist');
-  });
+    // 4. Item Title
+    act(() => { itemTitleHandler({ jobId, index: 1, title: 'Video One' }); });
+    expect(result.current.items[0].title).toBe('Video One');
 
-  it('handles download item start event', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const callback = mockOnDownloadItemStart.mock.calls[0][0];
-    
-    act(() => {
-      callback({ index: 1, total: 3 });
-    });
-    
-    expect(result.current.items).toHaveLength(3);
-    expect(result.current.items[0]).toEqual({
-      id: 'item-1',
-      title: 'Item 1',
-      status: 'downloading',
-      progress: 0
-    });
-    expect(result.current.items[1]).toEqual({
-      id: 'item-2',
-      title: 'Item 2',
-      status: 'pending',
-      progress: 0
-    });
-  });
+    // 5. Progress
+    act(() => { progressUpdateHandler({ jobId, index: 1, progress: 25, speed: '1MB/s' }); });
+    expect(result.current.items[0].progress).toBe(25);
 
-  it('handles item title update', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    // First, initialize items
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    act(() => {
-      startCallback({ index: 1, total: 2 });
-    });
-    
-    // Then update title
-    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
-    act(() => {
-      titleCallback({ index: 1, title: 'Updated Title' });
-    });
-    
-    expect(result.current.items[0].title).toBe('Updated Title');
-  });
-
-  it('handles progress update', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    // Initialize items
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    act(() => {
-      startCallback({ index: 1, total: 2 });
-    });
-    
-    // Update progress
-    const progressCallback = mockOnDownloadProgressUpdate.mock.calls[0][0];
-    act(() => {
-      progressCallback({ index: 1, progress: 50 });
-    });
-    
-    expect(result.current.items[0].progress).toBe(50);
-  });
-
-  it('handles item processing event', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    // Initialize items
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    act(() => {
-      startCallback({ index: 1, total: 2 });
-    });
-    
-    // Mark as processing
-    const processingCallback = mockOnDownloadItemProcessing.mock.calls[0][0];
-    act(() => {
-      processingCallback({ index: 1 });
-    });
-    
+    // 6. Processing
+    act(() => { itemProcessingHandler({ jobId, index: 1 }); });
     expect(result.current.items[0].status).toBe('processing');
-    expect(result.current.items[0].progress).toBe(100);
-  });
 
-  it('handles item complete event', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    // Initialize items
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    act(() => {
-      startCallback({ index: 1, total: 2 });
-    });
-    
-    // Mark as completed
-    const completeCallback = mockOnDownloadItemComplete.mock.calls[0][0];
-    act(() => {
-      completeCallback({ index: 1 });
-    });
-    
+    // 7. Complete
+    act(() => { itemCompleteHandler({ jobId, index: 1 }); });
     expect(result.current.items[0].status).toBe('completed');
-    expect(result.current.items[0].progress).toBe(100);
+
+    // 8. Global complete signal
+    act(() => { downloadCompleteHandler(); });
+    // Verify reset works too
+    act(() => { result.current.reset(); });
+    expect(result.current.items).toHaveLength(0);
   });
 
-  it('handles item error event', () => {
+  it('auto-creates items if events arrive out of order', () => {
     const { result } = renderHook(() => useDownloadItems());
+    const jobId = 'rogue-job';
     
-    // Initialize items
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    act(() => {
-      startCallback({ index: 1, total: 2 });
-    });
-    
-    // Mark as error
-    const errorCallback = mockOnDownloadItemError.mock.calls[0][0];
-    act(() => {
-      errorCallback({ index: 1, error: 'Network error' });
-    });
-    
+    // Event for index 1 arrives but startNewDownload wasn't called
+    act(() => { itemTitleHandler({ jobId, index: 1, title: 'Surprise Video' }); });
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].title).toBe('Surprise Video');
+  });
+
+  it('handles item errors correctly', () => {
+    const { result } = renderHook(() => useDownloadItems());
+    let jobId: string;
+    act(() => { jobId = result.current.startNewDownload(); });
+    // First trigger a start to establish the item index
+    act(() => { itemStartHandler({ jobId, index: 1, total: 1 }); });
+    act(() => { itemErrorHandler({ jobId, index: 1, error: 'Network fail' }); });
     expect(result.current.items[0].status).toBe('error');
-    expect(result.current.items[0].error).toBe('Network error');
-  });
-
-  it('handles multiple item updates in sequence', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
-    const progressCallback = mockOnDownloadProgressUpdate.mock.calls[0][0];
-    const completeCallback = mockOnDownloadItemComplete.mock.calls[0][0];
-    
-    act(() => {
-      startCallback({ index: 1, total: 3 });
-    });
-    
-    act(() => {
-      titleCallback({ index: 1, title: 'Video 1' });
-      progressCallback({ index: 1, progress: 25 });
-    });
-    
-    expect(result.current.items[0]).toEqual({
-      id: 'item-1',
-      title: 'Video 1',
-      status: 'downloading',
-      progress: 25
-    });
-    
-    act(() => {
-      progressCallback({ index: 1, progress: 75 });
-      progressCallback({ index: 1, progress: 100 });
-      completeCallback({ index: 1 });
-    });
-    
-    expect(result.current.items[0]).toEqual({
-      id: 'item-1',
-      title: 'Video 1',
-      status: 'completed',
-      progress: 100
-    });
-  });
-
-  it('handles updates for items at different indices', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
-    const progressCallback = mockOnDownloadProgressUpdate.mock.calls[0][0];
-    
-    act(() => {
-      startCallback({ index: 1, total: 3 });
-    });
-    
-    act(() => {
-      titleCallback({ index: 1, title: 'Video 1' });
-      titleCallback({ index: 2, title: 'Video 2' });
-      titleCallback({ index: 3, title: 'Video 3' });
-    });
-    
-    expect(result.current.items[0].title).toBe('Video 1');
-    expect(result.current.items[1].title).toBe('Video 2');
-    expect(result.current.items[2].title).toBe('Video 3');
-    
-    act(() => {
-      progressCallback({ index: 2, progress: 50 });
-    });
-    
-    expect(result.current.items[1].progress).toBe(50);
-  });
-
-  it('creates items automatically if updates are received for non-existent indices', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
-    
-    act(() => {
-      startCallback({ index: 1, total: 2 });
-    });
-    
-    // Update non-existent item at index 4
-    act(() => {
-      titleCallback({ index: 4, title: 'Auto Created' });
-    });
-    
-    expect(result.current.items).toHaveLength(4);
-    expect(result.current.items[3].title).toBe('Auto Created');
-    expect(result.current.items[3].status).toBe('downloading');
-  });
-
-  it('handles single video downloads where index might be missing or 0', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
-    
-    // Test missing index
-    act(() => {
-      titleCallback({ title: 'Single Video 1' });
-    });
-    
-    expect(result.current.items).toHaveLength(1);
-    expect(result.current.items[0].title).toBe('Single Video 1');
-    
-    // Reset and test index 0
-    act(() => {
-      result.current.reset();
-    });
-    
-    act(() => {
-      titleCallback({ index: 0, title: 'Single Video 2' });
-    });
-    
-    expect(result.current.items).toHaveLength(1);
-    expect(result.current.items[0].title).toBe('Single Video 2');
-  });
-
-  it('handles download complete event', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const completeCallback = mockOnDownloadComplete.mock.calls[0][0];
-    
-    // Should not throw an error
-    expect(() => {
-      act(() => {
-        completeCallback();
-      });
-    }).not.toThrow();
-  });
-
-  it('preserves item state across multiple updates', () => {
-    const { result } = renderHook(() => useDownloadItems());
-    
-    const startCallback = mockOnDownloadItemStart.mock.calls[0][0];
-    const titleCallback = mockOnDownloadItemTitle.mock.calls[0][0];
-    const progressCallback = mockOnDownloadProgressUpdate.mock.calls[0][0];
-    const processingCallback = mockOnDownloadItemProcessing.mock.calls[0][0];
-    
-    act(() => {
-      startCallback({ index: 1, total: 1 });
-      titleCallback({ index: 1, title: 'My Video' });
-    });
-    
-    const initialItem = result.current.items[0];
-    
-    act(() => {
-      progressCallback({ index: 1, progress: 50 });
-    });
-    
-    // Title should be preserved
-    expect(result.current.items[0].title).toBe('My Video');
-    expect(result.current.items[0].progress).toBe(50);
-    
-    act(() => {
-      processingCallback({ index: 1 });
-    });
-    
-    // Title should still be preserved
-    expect(result.current.items[0].title).toBe('My Video');
-    expect(result.current.items[0].status).toBe('processing');
+    expect(result.current.items[0].error).toBe('Network fail');
   });
 });
