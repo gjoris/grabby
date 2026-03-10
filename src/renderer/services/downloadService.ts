@@ -13,7 +13,8 @@ export class DownloadService {
         format: 'bestaudio/best',
         extractAudio: true,
         audioFormat: 'mp3',
-        output: baseOutput
+        output: baseOutput,
+        noVideo: true
       };
     }
 

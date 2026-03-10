@@ -252,6 +252,7 @@ ipcMain.handle('download', async (event, url: string, options: any, jobId: strin
         if (options.extractAudio) entryArgs.push('-x');
         if (options.audioFormat) entryArgs.push('--audio-format', options.audioFormat);
         if (options.mergeOutputFormat) entryArgs.push('--merge-output-format', options.mergeOutputFormat);
+        if (options.noVideo) entryArgs.push('--no-video');
         if (options.output) entryArgs.push('-o', options.output);
 
         const child = spawn(ytdlpPath, entryArgs);
