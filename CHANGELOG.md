@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2026-03-10
 
 ### Changed
+- Updated Github build system to no longer used signed build for MacOS
+
+## [1.2.1] - 2026-03-10
+
+### Changed
 - macOS distribution now uses ZIP format only (no DMG) for simpler installation without code signing requirements
 - Users can extract and drag the app to Applications folder directly
 
