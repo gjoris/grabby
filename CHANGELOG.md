@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.2] - 2026-03-10
 
-### Changed
-- Updated Github build system to no longer used signed build for MacOS
+### Fixed
+- Fixed macOS build filenames in GitHub releases
+- Disabled code signing in CI/CD pipeline for unsigned builds
 
 ## [1.2.1] - 2026-03-10
 
@@ -113,6 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Playlist support with individual item progress
 - Dark theme interface
 
+[1.2.2]: https://github.com/gjoris/grabby/releases/tag/v1.2.2
+[1.2.1]: https://github.com/gjoris/grabby/releases/tag/v1.2.1
 [1.1.2]: https://github.com/gjoris/grabby/releases/tag/v1.1.2
 [1.1.1]: https://github.com/gjoris/grabby/releases/tag/v1.1.1
 [1.1.0]: https://github.com/gjoris/grabby/releases/tag/v1.1.0
