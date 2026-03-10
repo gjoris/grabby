@@ -26,7 +26,7 @@ A user-friendly desktop application for downloading videos and audio from YouTub
 - 🌐 Fully cross-platform (Windows, macOS, Linux)
 - 💾 Portable builds available
 - 🎨 Modern and intuitive user interface
-- 📝 Detailed download history
+- ⏸️ Download cancellation with process cleanup
 
 ## 📥 Installation
 

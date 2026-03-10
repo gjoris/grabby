@@ -195,15 +195,15 @@ export function useDownloadItems() {
 
   const startNewDownload = () => {
     const jobId = Math.random().toString(36).substring(2, 9);
-    setItems(prev => [
+    setItems([
       {
         id: `${jobId}-init`,
         title: 'Initializing...',
         status: 'pending',
         progress: 0
-      },
-      ...prev
+      }
     ]);
+    setPlaylistName('');
     return jobId;
   };
 
