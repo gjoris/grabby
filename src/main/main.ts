@@ -15,6 +15,76 @@ let mainWindow: BrowserWindow | null = null;
 // Track active download processes by jobId
 const downloadProcesses = new Map<string, ChildProcess[]>();
 
+// Track download paths by jobId for cleanup
+const downloadPathsByJobId = new Map<string, string>();
+
+// Helper function to get temp folder path
+function getTempFolder(downloadPath: string): string {
+  return path.join(downloadPath, '.grabby-temp');
+}
+
+// Helper function to get job temp folder
+function getJobTempFolder(downloadPath: string, jobId: string): string {
+  return path.join(getTempFolder(downloadPath), jobId);
+}
+
+// Cleanup orphaned temp folders
+function cleanupOrphanedTempFolders(downloadPath: string): void {
+  const tempFolder = getTempFolder(downloadPath);
+  if (!fs.existsSync(tempFolder)) return;
+
+  try {
+    const items = fs.readdirSync(tempFolder);
+    items.forEach(item => {
+      const itemPath = path.join(tempFolder, item);
+      const stat = fs.statSync(itemPath);
+      if (stat.isDirectory()) {
+        // Remove orphaned job folders
+        fs.rmSync(itemPath, { recursive: true, force: true });
+        LogService.appLog(`Cleaned up orphaned temp folder: ${item}`, 'info');
+      }
+    });
+    
+    // Remove temp folder if empty
+    if (fs.readdirSync(tempFolder).length === 0) {
+      fs.rmdirSync(tempFolder);
+    }
+  } catch (error) {
+    LogService.appLog(`Error cleaning up temp folders: ${error}`, 'error');
+  }
+}
+
+// Move files from temp folder to final destination
+function moveFilesFromTemp(jobTempFolder: string, downloadPath: string): void {
+  if (!fs.existsSync(jobTempFolder)) return;
+
+  try {
+    const files = fs.readdirSync(jobTempFolder);
+    files.forEach(file => {
+      const tempFilePath = path.join(jobTempFolder, file);
+      const finalFilePath = path.join(downloadPath, file);
+      
+      // If file already exists, add a number suffix
+      let finalPath = finalFilePath;
+      let counter = 1;
+      while (fs.existsSync(finalPath)) {
+        const ext = path.extname(file);
+        const name = path.basename(file, ext);
+        finalPath = path.join(downloadPath, `${name} (${counter})${ext}`);
+        counter++;
+      }
+      
+      fs.renameSync(tempFilePath, finalPath);
+      LogService.log(`Moved: ${file} -> ${path.basename(finalPath)}`, 'info');
+    });
+    
+    // Remove temp folder
+    fs.rmdirSync(jobTempFolder);
+  } catch (error) {
+    LogService.log(`Error moving files from temp: ${error}`, 'error');
+  }
+}
+
 interface Settings {
   downloadPath: string;
 }
@@ -110,6 +180,10 @@ app.whenReady().then(async () => {
   LogService.appLog(`Electron version: ${process.versions.electron}`, 'info');
   LogService.appLog(`Node version: ${process.versions.node}`, 'info');
   
+  // Load settings and cleanup orphaned temp folders
+  const settings = loadSettings();
+  cleanupOrphanedTempFolders(settings.downloadPath);
+  
   // Set dock icon on macOS
   if (process.platform === 'darwin') {
     const iconPath = process.env.NODE_ENV === 'development'
@@ -203,8 +277,27 @@ ipcMain.handle('download', async (event, url: string, options: any, jobId: strin
   const ffmpegPath = getBinaryPath('ffmpeg');
   const binaryDir = path.dirname(ffmpegPath);
   
+  // Get the final download path from options
+  const finalDownloadPath = path.dirname(options.output);
+  const jobTempFolder = getJobTempFolder(finalDownloadPath, jobId);
+  
+  // Track download path for cleanup
+  downloadPathsByJobId.set(jobId, finalDownloadPath);
+  
+  // Create temp folder
+  try {
+    fs.mkdirSync(jobTempFolder, { recursive: true });
+  } catch (error) {
+    LogService.log(`Failed to create temp folder: ${error}`, 'error');
+    throw error;
+  }
+  
+  // Update output path to use temp folder
+  const tempOutput = path.join(jobTempFolder, '%(title)s.%(ext)s');
+  
   const logFile = LogService.startDownloadLog();
   LogService.log(`Download task started [Job: ${jobId}] for: ${url}`);
+  LogService.log(`Temp folder: ${jobTempFolder}`, 'info');
 
   const MAX_CONCURRENT = 3;
   let activeProcesses = 0;
@@ -218,6 +311,12 @@ ipcMain.handle('download', async (event, url: string, options: any, jobId: strin
     const runNext = () => {
       // Resolve only if metadata fetch is done AND all discovered items are finished
       if (metadataFinished && finishedItems === totalDiscovered && totalDiscovered > 0) {
+        // Move files from temp to final location
+        moveFilesFromTemp(jobTempFolder, finalDownloadPath);
+        
+        // Cleanup tracking
+        downloadPathsByJobId.delete(jobId);
+        
         event.sender.send('download-complete', { jobId });
         LogService.endDownloadLog(true);
         resolve({ success: true, logFile });
@@ -253,7 +352,8 @@ ipcMain.handle('download', async (event, url: string, options: any, jobId: strin
         if (options.audioFormat) entryArgs.push('--audio-format', options.audioFormat);
         if (options.mergeOutputFormat) entryArgs.push('--merge-output-format', options.mergeOutputFormat);
         if (options.noVideo) entryArgs.push('--no-video');
-        if (options.output) entryArgs.push('-o', options.output);
+        // Use temp folder for output
+        entryArgs.push('-o', tempOutput);
 
         const child = spawn(ytdlpPath, entryArgs);
         
@@ -511,6 +611,22 @@ ipcMain.handle('cancel-download', async (event, jobId: string) => {
   });
   
   downloadProcesses.delete(jobId);
+  
+  // Cleanup temp folder
+  const downloadPath = downloadPathsByJobId.get(jobId);
+  if (downloadPath) {
+    const jobTempFolder = getJobTempFolder(downloadPath, jobId);
+    try {
+      if (fs.existsSync(jobTempFolder)) {
+        fs.rmSync(jobTempFolder, { recursive: true, force: true });
+        LogService.log(`Cleaned up temp folder for cancelled download: ${jobId}`, 'info');
+      }
+    } catch (error) {
+      LogService.log(`Error cleaning up temp folder: ${error}`, 'error');
+    }
+    downloadPathsByJobId.delete(jobId);
+  }
+  
   LogService.log(`Download cancelled [Job: ${jobId}] - killed ${killed} processes`, 'info');
   event.sender.send('download-cancelled', { jobId });
   

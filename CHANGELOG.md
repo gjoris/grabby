@@ -13,10 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Process tracking for all spawned child processes (yt-dlp, ffmpeg)
 - Cancelled status for download items with visual indicator
 - Automatic cleanup of processes on app shutdown
+- Temporary folder system for safe downloads: files download to `.grabby-temp/[jobId]/` and move to final location on success
+- Automatic cleanup of incomplete files on download cancellation or error
+- Cleanup of orphaned temp folders on app startup
 
 ### Changed
 - Download form now displays Cancel button when download is in progress
 - Download button disabled during active downloads
+- Downloads now use temporary folders to prevent incomplete files in download directory
+
+### Fixed
+- Fixed MP3 downloads downloading both audio and video files (added `--no-video` flag)
 
 ## [1.2.2] - 2026-03-10
 
