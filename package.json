@@ -73,15 +73,13 @@
     "mac": {
       "icon": "resources/icon.png",
       "category": "public.app-category.utilities",
-      "identity": "Developer ID Application: Geroen Joris",
-      "cscLink": "certs/macos.p12",
-      "cscKeyPassword": "${CSC_KEY_PASSWORD}",
       "target": [
         {
           "target": "zip",
           "arch": "universal"
         }
-      ]
+      ],
+      "sign": false
     },
     "win": {
       "icon": "resources/icon.png",
