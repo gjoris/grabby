@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  download: (url: string, options: any) => ipcRenderer.invoke('download', url, options),
+  download: (url: string, options: any, jobId: string) => ipcRenderer.invoke('download', url, options, jobId),
   getInfo: (url: string) => ipcRenderer.invoke('get-info', url),
   checkBinaries: () => ipcRenderer.invoke('check-binaries'),
   selectFolder: () => ipcRenderer.invoke('select-folder'),

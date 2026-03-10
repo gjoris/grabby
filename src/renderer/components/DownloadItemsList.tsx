@@ -47,7 +47,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
   };
 
   return (
-    <Paper elevation={3} sx={{ overflow: 'hidden' }}>
+    <Paper elevation={3} sx={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {playlistName && (
         <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
           <PlaylistPlayIcon />
@@ -58,7 +58,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
         </Box>
       )}
       
-      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+      <List sx={{ flex: 1, overflow: 'auto' }}>
         {items.map((item) => (
           <ListItem 
             key={item.id}
@@ -96,6 +96,16 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
                   value={item.progress} 
                   sx={{ height: 6, borderRadius: 3 }}
                 />
+                {(item.size || item.speed || item.eta) && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {item.size} {item.speed && `• ${item.speed}`}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {item.eta && `ETA: ${item.eta}`}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             )}
             

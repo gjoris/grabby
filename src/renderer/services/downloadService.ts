@@ -19,6 +19,7 @@ export class DownloadService {
 
     return {
       format: 'bestvideo+bestaudio/best',
+      mergeOutputFormat: 'mkv',
       output: baseOutput
     };
   }
@@ -26,9 +27,10 @@ export class DownloadService {
   static async download(
     url: string,
     downloadType: DownloadType,
-    downloadPath: string
+    downloadPath: string,
+    jobId: string
   ): Promise<void> {
     const options = this.buildDownloadOptions(downloadType, downloadPath);
-    await ElectronAPIService.download(url, options);
+    await ElectronAPIService.download(url, options, jobId);
   }
 }
