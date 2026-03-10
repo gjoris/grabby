@@ -1,6 +1,6 @@
 {
   "name": "grabby",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Cross-platform yt-dlp GUI application",
   "main": "dist/main/main.js",
   "scripts": {
@@ -74,10 +74,6 @@
       "icon": "resources/icon.png",
       "category": "public.app-category.utilities",
       "target": [
-        {
-          "target": "dmg",
-          "arch": "universal"
-        },
         {
           "target": "zip",
           "arch": "universal"
