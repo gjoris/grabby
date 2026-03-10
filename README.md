@@ -35,7 +35,7 @@ A user-friendly desktop application for downloading videos and audio from YouTub
 Download the latest version for your platform:
 
 - **Windows**: `Grabby-Setup-x.x.x.exe` (installer) or `Grabby-x.x.x.exe` (portable)
-- **macOS**: `Grabby-x.x.x.dmg` or `Grabby-x.x.x-mac.zip`
+- **macOS**: `Grabby-x.x.x-mac-universal.zip`
 - **Linux**: `Grabby-x.x.x.AppImage` or `Grabby-x.x.x.tar.gz`
 
 👉 [Download the latest release](https://github.com/gjoris/grabby/releases/latest)
@@ -50,14 +50,15 @@ See the [CHANGELOG](CHANGELOG.md) for details about each release.
 3. Follow the installation wizard (installer version only)
 
 #### macOS
-1. Download the `.dmg` file
-2. Open the file and drag Grabby to your Applications folder
-3. On first launch: You may see a security warning (Gatekeeper)
-   - Click "Open" in the dialog, or
-   - Right-click the app → Select "Open"
-   - After the first launch, no warning will appear again
+1. Download the `.zip` file
+2. Extract the ZIP file
+3. Drag Grabby.app to your Applications folder
+4. On first launch: Right-click the app and select "Open" (required for unsigned apps)
+   - You'll see a security warning because the app is not signed with an Apple Developer certificate
+   - Click "Open" to confirm
+   - After the first launch, you can open it normally
 
-> **Note**: This app is self-signed by the developer (Geroen Joris). If you see a security warning, it's normal and expected. The app is safe to use.
+> **Note**: macOS Gatekeeper will show a warning because this app is not code-signed. This is normal for free, open-source apps. The app is safe to use - you can verify the source code in this repository.
 
 #### Linux
 1. Download the `.AppImage` file
