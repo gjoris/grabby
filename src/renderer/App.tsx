@@ -60,16 +60,25 @@ const theme = createTheme({
 function App() {
   const [currentView, setCurrentView] = useState<'main' | 'settings'>('main');
   const [customDownloadPath, setCustomDownloadPath] = useState<string>('');
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   
   const { isReady, binaryProgress, hasBinaryDownloads } = useBinarySetup();
   const { settings, loadSettings } = useSettings();
   const downloadPath = customDownloadPath || settings.downloadPath;
-  const { isDownloading, startDownload } = useDownload(downloadPath);
+  const { isDownloading, startDownload, cancelDownload } = useDownload(downloadPath);
   const { items, playlistName, startNewDownload } = useDownloadItems();
 
   const handleDownload = (url: string, type: DownloadType) => {
     const jobId = startNewDownload();
+    setCurrentJobId(jobId);
     startDownload(url, type, jobId);
+  };
+
+  const handleCancel = () => {
+    if (currentJobId) {
+      cancelDownload(currentJobId);
+      setCurrentJobId(null);
+    }
   };
 
   const handleLocationChange = (path: string) => {
@@ -137,7 +146,8 @@ function App() {
             }}>
               <DownloadForm 
                 onDownload={handleDownload}
-                isDownloading={false}
+                onCancel={handleCancel}
+                isDownloading={isDownloading}
               />
               <DownloadLocationSelector onLocationChange={handleLocationChange} />
             </Box>

@@ -13,16 +13,18 @@ import {
   Download as DownloadIcon, 
   MusicNote as AudioIcon, 
   Movie as VideoIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Stop as StopIcon
 } from '@mui/icons-material';
 import { DownloadType } from '../types';
 
 interface DownloadFormProps {
   onDownload: (url: string, type: DownloadType) => void;
+  onCancel: () => void;
   isDownloading: boolean;
 }
 
-function DownloadForm({ onDownload, isDownloading }: DownloadFormProps) {
+function DownloadForm({ onDownload, onCancel, isDownloading }: DownloadFormProps) {
   const [url, setUrl] = useState('');
   const [downloadType, setDownloadType] = useState<DownloadType>('video');
 
@@ -135,25 +137,45 @@ function DownloadForm({ onDownload, isDownloading }: DownloadFormProps) {
         </ToggleButtonGroup>
       </Box>
       
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        disabled={!url || isDownloading}
-        startIcon={isDownloading ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
-        sx={{ 
-          height: 40, 
-          px: 4, 
-          textTransform: 'none', 
-          fontWeight: 700, 
-          borderRadius: 2,
-          whiteSpace: 'nowrap',
-          minWidth: 160,
-          boxShadow: '0 4px 14px 0 rgba(102, 126, 234, 0.39)',
-        }}
-      >
-        {isDownloading ? 'Downloading...' : 'Start Download'}
-      </Button>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={!url || isDownloading}
+          startIcon={isDownloading ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
+          sx={{ 
+            height: 40, 
+            px: 4, 
+            textTransform: 'none', 
+            fontWeight: 700, 
+            borderRadius: 2,
+            whiteSpace: 'nowrap',
+            minWidth: 160,
+            boxShadow: '0 4px 14px 0 rgba(102, 126, 234, 0.39)',
+          }}
+        >
+          {isDownloading ? 'Downloading...' : 'Start Download'}
+        </Button>
+        {isDownloading && (
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<StopIcon />}
+            onClick={onCancel}
+            sx={{ 
+              height: 40, 
+              px: 3, 
+              textTransform: 'none', 
+              fontWeight: 700, 
+              borderRadius: 2,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Cancel
+          </Button>
+        )}
+      </Box>
     </Paper>
   );
 }

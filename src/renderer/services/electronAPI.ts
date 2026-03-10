@@ -12,6 +12,8 @@ declare global {
       onDownloadItemProcessing: (callback: (data: any) => void) => void;
       onDownloadItemComplete: (callback: (data: any) => void) => void;
       onDownloadItemError: (callback: (data: any) => void) => void;
+      onDownloadItemCancelled: (callback: (data: any) => void) => void;
+      onDownloadCancelled: (callback: (data: any) => void) => void;
       onDownloadComplete: (callback: () => void) => void;
       onBinaryDownloadProgress: (callback: (data: { binary: string; progress: number; status: string }) => void) => void;
       onBinariesReady: (callback: () => void) => void;
@@ -27,6 +29,7 @@ declare global {
       getAppVersion: () => Promise<string>;
       checkForUpdates: () => Promise<any>;
       redownloadBinaries: () => Promise<boolean>;
+      cancelDownload: (jobId: string) => Promise<any>;
     };
   }
 }
@@ -84,6 +87,14 @@ export class ElectronAPIService {
     window.electronAPI.onDownloadItemError(callback);
   }
 
+  static onDownloadItemCancelled(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadItemCancelled(callback);
+  }
+
+  static onDownloadCancelled(callback: (data: any) => void): void {
+    window.electronAPI.onDownloadCancelled(callback);
+  }
+
   static onDownloadComplete(callback: () => void): void {
     window.electronAPI.onDownloadComplete(callback);
   }
@@ -126,5 +137,9 @@ export class ElectronAPIService {
 
   static async redownloadBinaries(): Promise<boolean> {
     return window.electronAPI.redownloadBinaries();
+  }
+
+  static async cancelDownload(jobId: string): Promise<any> {
+    return window.electronAPI.cancelDownload(jobId);
   }
 }

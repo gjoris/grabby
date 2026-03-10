@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import { checkAndDownloadBinaries, getBinaryPath, redownloadAllBinaries } from './binaryManager';
 import { LogService } from './services/logService';
 import { DownloadParser } from './services/downloadParser';
@@ -11,6 +11,9 @@ import { VersionManager } from './services/versionManager';
 const APP_VERSION = app.getVersion();
 
 let mainWindow: BrowserWindow | null = null;
+
+// Track active download processes by jobId
+const downloadProcesses = new Map<string, ChildProcess[]>();
 
 interface Settings {
   downloadPath: string;
@@ -176,6 +179,18 @@ app.on('window-all-closed', () => {
   }
 });
 
+app.on('before-quit', () => {
+  // Kill all active download processes
+  downloadProcesses.forEach((processes) => {
+    processes.forEach((proc) => {
+      if (proc && !proc.killed) {
+        proc.kill('SIGKILL');
+      }
+    });
+  });
+  downloadProcesses.clear();
+});
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
@@ -241,6 +256,12 @@ ipcMain.handle('download', async (event, url: string, options: any, jobId: strin
 
         const child = spawn(ytdlpPath, entryArgs);
         
+        // Track this process
+        if (!downloadProcesses.has(jobId)) {
+          downloadProcesses.set(jobId, []);
+        }
+        downloadProcesses.get(jobId)!.push(child);
+        
         event.sender.send('download-item-start', { jobId, index: entryIndex, total: totalDiscovered || 1 });
         if (entry.title) {
           event.sender.send('download-item-title', { jobId, index: entryIndex, title: entry.title });
@@ -269,8 +290,18 @@ ipcMain.handle('download', async (event, url: string, options: any, jobId: strin
         child.on('close', (code) => {
           activeProcesses--;
           finishedItems++;
+          
+          // Remove from tracking
+          const processes = downloadProcesses.get(jobId) || [];
+          const index = processes.indexOf(child);
+          if (index > -1) processes.splice(index, 1);
+          if (processes.length === 0) downloadProcesses.delete(jobId);
+          
           if (code === 0) {
             event.sender.send('download-item-complete', { jobId, index: entryIndex });
+          } else if (code === null) {
+            // Process was killed (cancelled)
+            event.sender.send('download-item-cancelled', { jobId, index: entryIndex });
           } else {
             event.sender.send('download-item-error', { jobId, index: entryIndex, error: `Exit code ${code}` });
           }
@@ -464,4 +495,23 @@ ipcMain.handle('redownload-binaries', async () => {
   }
   
   return success;
+});
+
+// Cancel download
+ipcMain.handle('cancel-download', async (event, jobId: string) => {
+  const processes = downloadProcesses.get(jobId) || [];
+  let killed = 0;
+  
+  processes.forEach((proc) => {
+    if (proc && !proc.killed) {
+      proc.kill('SIGTERM');
+      killed++;
+    }
+  });
+  
+  downloadProcesses.delete(jobId);
+  LogService.log(`Download cancelled [Job: ${jobId}] - killed ${killed} processes`, 'info');
+  event.sender.send('download-cancelled', { jobId });
+  
+  return { success: true, killed };
 });

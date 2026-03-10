@@ -22,6 +22,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
       case 'processing': return <ProcessingIcon fontSize="small" color="secondary" />;
       case 'completed': return <CompletedIcon fontSize="small" color="success" />;
       case 'error': return <ErrorIcon fontSize="small" color="error" />;
+      case 'cancelled': return <ErrorIcon fontSize="small" color="warning" />;
     }
   };
 
@@ -32,6 +33,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
       case 'processing': return 'Converting';
       case 'completed': return 'Complete';
       case 'error': return 'Failed';
+      case 'cancelled': return 'Cancelled';
     }
   };
 
@@ -42,6 +44,7 @@ function DownloadItemsList({ items, playlistName }: DownloadItemsListProps) {
       case 'processing': return 'secondary';
       case 'completed': return 'success';
       case 'error': return 'error';
+      case 'cancelled': return 'warning';
       default: return 'default';
     }
   };

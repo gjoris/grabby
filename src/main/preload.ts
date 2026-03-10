@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onDownloadItemError: (callback: (data: any) => void) => {
     ipcRenderer.on('download-item-error', (_, data) => callback(data));
   },
+  onDownloadItemCancelled: (callback: (data: any) => void) => {
+    ipcRenderer.on('download-item-cancelled', (_, data) => callback(data));
+  },
+  onDownloadCancelled: (callback: (data: any) => void) => {
+    ipcRenderer.on('download-cancelled', (_, data) => callback(data));
+  },
   onDownloadComplete: (callback: () => void) => {
     ipcRenderer.on('download-complete', () => callback());
   },
@@ -44,5 +50,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getBinaryVersions: () => ipcRenderer.invoke('get-binary-versions'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
-  redownloadBinaries: () => ipcRenderer.invoke('redownload-binaries')
+  redownloadBinaries: () => ipcRenderer.invoke('redownload-binaries'),
+  cancelDownload: (jobId: string) => ipcRenderer.invoke('cancel-download', jobId)
 });

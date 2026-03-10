@@ -152,6 +152,36 @@ export function useDownloadItems() {
       });
     });
 
+    // Cancelled
+    window.electronAPI.onDownloadItemCancelled((data: any) => {
+      setItems(prev => {
+        const newItems = [...prev];
+        const itemId = `${data.jobId}-${data.index || 1}`;
+        const item = newItems.find(i => i.id === itemId);
+
+        if (item) {
+          item.status = 'cancelled';
+        }
+        return newItems;
+      });
+    });
+
+    // Download cancelled
+    window.electronAPI.onDownloadCancelled((data: any) => {
+      // Mark all items for this job as cancelled
+      setItems(prev => {
+        const newItems = [...prev];
+        newItems.forEach(item => {
+          if (item.id.startsWith(data.jobId)) {
+            if (item.status === 'pending' || item.status === 'downloading' || item.status === 'processing') {
+              item.status = 'cancelled';
+            }
+          }
+        });
+        return newItems;
+      });
+    });
+
     // Download complete
     window.electronAPI.onDownloadComplete(() => {
       // Job done
