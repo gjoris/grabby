@@ -5,20 +5,21 @@ import DownloadForm from '../../components/DownloadForm';
 
 describe('DownloadForm', () => {
   const mockOnDownload = vi.fn();
+  const mockOnCancel = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders input field and download button', () => {
-    render(<DownloadForm onDownload={mockOnDownload} isDownloading={false} />);
+    render(<DownloadForm onDownload={mockOnDownload} onCancel={mockOnCancel} isDownloading={false} />);
     
     expect(screen.getByPlaceholderText(/paste.*url/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start download/i })).toBeInTheDocument();
   });
 
   it('enables button when URL is entered', async () => {
-    render(<DownloadForm onDownload={mockOnDownload} isDownloading={false} />);
+    render(<DownloadForm onDownload={mockOnDownload} onCancel={mockOnCancel} isDownloading={false} />);
     
     const input = screen.getByPlaceholderText(/paste.*url/i);
     const button = screen.getByRole('button', { name: /start download/i });
@@ -30,7 +31,7 @@ describe('DownloadForm', () => {
   });
 
   it('calls onDownload with URL and default format when submitted', async () => {
-    render(<DownloadForm onDownload={mockOnDownload} isDownloading={false} />);
+    render(<DownloadForm onDownload={mockOnDownload} onCancel={mockOnCancel} isDownloading={false} />);
     
     const input = screen.getByPlaceholderText(/paste.*url/i);
     const button = screen.getByRole('button', { name: /start download/i });
@@ -42,7 +43,7 @@ describe('DownloadForm', () => {
   });
 
   it('shows downloading state when isDownloading is true', () => {
-    render(<DownloadForm onDownload={mockOnDownload} isDownloading={true} />);
+    render(<DownloadForm onDownload={mockOnDownload} onCancel={mockOnCancel} isDownloading={true} />);
     
     expect(screen.getByText(/downloading\.\.\./i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /downloading/i })).toBeDisabled();

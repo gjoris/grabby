@@ -9,6 +9,8 @@ let itemTitleHandler: any;
 let itemProcessingHandler: any;
 let itemCompleteHandler: any;
 let itemErrorHandler: any;
+let itemCancelledHandler: any;
+let downloadCancelledHandler: any;
 let playlistInfoHandler: any;
 let downloadCompleteHandler: any;
 
@@ -21,6 +23,8 @@ Object.defineProperty(window, 'electronAPI', {
     onDownloadItemProcessing: (cb: any) => { itemProcessingHandler = cb; },
     onDownloadItemComplete: (cb: any) => { itemCompleteHandler = cb; },
     onDownloadItemError: (cb: any) => { itemErrorHandler = cb; },
+    onDownloadItemCancelled: (cb: any) => { itemCancelledHandler = cb; },
+    onDownloadCancelled: (cb: any) => { downloadCancelledHandler = cb; },
     onDownloadComplete: (cb: any) => { downloadCompleteHandler = cb; },
   },
   writable: true,
