@@ -34,6 +34,8 @@ Object.defineProperty(window, 'electronAPI', {
     onDownloadItemProcessing: vi.fn(),
     onDownloadItemComplete: vi.fn(),
     onDownloadItemError: vi.fn(),
+    onDownloadItemCancelled: vi.fn(),
+    onDownloadCancelled: vi.fn(),
     onDownloadComplete: vi.fn(),
     getLogsDirectory: vi.fn().mockResolvedValue('/logs'),
     openLogsDirectory: vi.fn(),
@@ -43,6 +45,7 @@ Object.defineProperty(window, 'electronAPI', {
     getAppVersion: mockGetAppVersion,
     checkForUpdates: vi.fn().mockResolvedValue({ hasUpdates: false }),
     redownloadBinaries: vi.fn(),
+    cancelDownload: vi.fn(),
   },
   writable: true,
 });

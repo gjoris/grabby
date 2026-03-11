@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Mock Electron API
-global.window.electronAPI = {
+const mockElectronAPI = {
   download: vi.fn(),
   getInfo: vi.fn(),
   checkBinaries: vi.fn(),
@@ -16,6 +16,8 @@ global.window.electronAPI = {
   onDownloadItemProcessing: vi.fn(),
   onDownloadItemComplete: vi.fn(),
   onDownloadItemError: vi.fn(),
+  onDownloadItemCancelled: vi.fn(),
+  onDownloadCancelled: vi.fn(),
   onDownloadComplete: vi.fn(),
   onBinaryDownloadProgress: vi.fn(),
   onBinariesReady: vi.fn(),
@@ -32,4 +34,10 @@ global.window.electronAPI = {
   getAppVersion: vi.fn().mockResolvedValue('1.1.0'),
   checkForUpdates: vi.fn(),
   redownloadBinaries: vi.fn(),
+  cancelDownload: vi.fn(),
 };
+
+Object.defineProperty(window, 'electronAPI', {
+  value: mockElectronAPI,
+  writable: true,
+});
